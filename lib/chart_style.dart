@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart';
 
 class ChartColors {
   List<Color> bgColor = [Color(0xff18191d), Color(0xff18191d)];
@@ -53,6 +53,8 @@ class ChartColors {
   //当前显示内最大和最小值的颜色
   Color maxColor = Color(0xffffffff);
   Color minColor = Color(0xffffffff);
+  // 实时价格虚线颜色
+  Color nowPriceDashLineColor = Color(0xff696969);
 
   Color getMAColor(int index) {
     switch (index % 3) {
@@ -71,7 +73,11 @@ class ChartStyle {
 
   double bottomPadding = 20.0;
 
+  double mainVerticalPadding = 15;
+
   double childPadding = 12.0;
+
+  double rightPadding = 60.0;
 
   //点与点的距离
   double pointWidth = 11.0;
@@ -92,7 +98,10 @@ class ChartStyle {
   double vCrossWidth = 8.5;
 
   //水平交叉线宽度
-  double hCrossWidth = 0.5;
+  double hCrossWidth = 1;
+
+  //水平、垂直交叉圆点大小
+  double crossPointRadius = 8.5;
 
   //现在价格的线条长度
   double nowPriceLineLength = 1;
@@ -109,4 +118,16 @@ class ChartStyle {
 
   //下方時間客製化
   List<String>? dateTimeFormat;
+
+  //选中后弹窗的宽度
+  double? selectWidth = 100;
+
+  //选中后弹窗的padding
+  double? selectPadding = 5;
+
+  //选中后显示值边框圆角
+  double selectBorderRadius = 0;
+
+  //选中后显示值边框宽度
+  double selectBorderWidth = 1;
 }

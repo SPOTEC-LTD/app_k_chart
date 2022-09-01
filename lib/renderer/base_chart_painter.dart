@@ -24,6 +24,7 @@ abstract class BaseChartPainter extends CustomPainter {
   bool isLongPress = false;
   bool isOnTap;
   bool isLine;
+  List<String> dateTimeFormat;
 
   //3块区域大小与位置
   late Rect mMainRect;
@@ -45,7 +46,6 @@ abstract class BaseChartPainter extends CustomPainter {
   final ChartStyle chartStyle;
   late double mPointWidth;
   List<String> mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn]; //格式化时间
-  double xFrontPadding;
 
   BaseChartPainter(
     this.chartStyle, {
@@ -54,7 +54,7 @@ abstract class BaseChartPainter extends CustomPainter {
     required this.scrollX,
     required this.isLongPress,
     required this.selectX,
-    required this.xFrontPadding,
+    required this.dateTimeFormat,
     this.isOnTap = false,
     this.mainState = MainState.MA,
     this.volHidden = false,
@@ -70,33 +70,7 @@ abstract class BaseChartPainter extends CustomPainter {
     mGridRows = this.chartStyle.gridRows;
     mGridColumns = this.chartStyle.gridColumns;
     mDataLen = mItemCount * mPointWidth;
-    initFormats();
-  }
-
-  void initFormats() {
-    if (this.chartStyle.dateTimeFormat != null) {
-      mFormats = this.chartStyle.dateTimeFormat!;
-      return;
-    }
-
-    if (mItemCount < 2) {
-      mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];
-      return;
-    }
-
-    int firstTime = datas!.first.time ?? 0;
-    int secondTime = datas![1].time ?? 0;
-    int time = secondTime - firstTime;
-    time ~/= 1000;
-    //月线
-    if (time >= 24 * 60 * 60 * 28)
-      mFormats = [yy, '-', mm];
-    //日线等
-    else if (time >= 24 * 60 * 60)
-      mFormats = [yy, '-', mm, '-', dd];
-    //小时线等
-    else
-      mFormats = [mm, '-', dd, ' ', HH, ':', nn];
+    mFormats = dateTimeFormat;
   }
 
   @override
@@ -207,8 +181,8 @@ abstract class BaseChartPainter extends CustomPainter {
       maxPrice = max(item.high, _findMaxMA(item.maValueList ?? [0]));
       minPrice = min(item.low, _findMinMA(item.maValueList ?? [0]));
     } else if (mainState == MainState.BOLL) {
-      maxPrice = max(item.up ?? 0, item.high);
-      minPrice = min(item.dn ?? 0, item.low);
+      maxPrice = item.up == null ? item.high : max(item.up!, item.high);
+      minPrice = item.dn == null ? item.low : min(item.dn!, item.low);
     } else {
       maxPrice = item.high;
       minPrice = item.low;
@@ -336,7 +310,10 @@ abstract class BaseChartPainter extends CustomPainter {
 
   ///获取平移的最小值
   double getMinTranslateX() {
-    var x = -mDataLen + mWidth / scaleX - mPointWidth / 2 - xFrontPadding;
+    var x = -mDataLen +
+        mWidth / scaleX -
+        mPointWidth / 2 -
+        chartStyle.rightPadding / scaleX;
     return x >= 0 ? 0.0 : x;
   }
 

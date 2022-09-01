@@ -36,7 +36,7 @@ abstract class BaseChartRenderer<T> {
     // print("maxValue=====" + maxValue.toString() + "====minValue===" + minValue.toString() + "==scaleY==" + scaleY.toString());
   }
 
-  double getY(double y) => (maxValue - y) * scaleY + chartRect.top;
+  double getY(double price) => (maxValue - price) * scaleY + chartRect.top;
 
   String format(double? n) {
     if (n == null || n.isNaN) {

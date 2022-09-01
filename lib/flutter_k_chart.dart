@@ -8,3 +8,4 @@ export 'utils/index.dart'; //数据加工
 export 'entity/index.dart'; //数据
 export 'renderer/index.dart';
 export 'extension/num_ext.dart';
+export 'k_chart_controller.dart';

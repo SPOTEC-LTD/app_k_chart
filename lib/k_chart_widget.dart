@@ -9,21 +9,6 @@ enum MainState { MA, BOLL, NONE }
 
 enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
 
-class TimeFormat {
-  static const List<String> YEAR_MONTH_DAY = [yyyy, '-', mm, '-', dd];
-  static const List<String> YEAR_MONTH_DAY_WITH_HOUR = [
-    yyyy,
-    '-',
-    mm,
-    '-',
-    dd,
-    ' ',
-    HH,
-    ':',
-    nn
-  ];
-}
-
 class KChartWidget extends StatefulWidget {
   final List<KLineEntity>? datas;
   final MainState mainState;
@@ -39,7 +24,6 @@ class KChartWidget extends StatefulWidget {
   final bool showInfoDialog;
   final bool materialInfoDialog; // Material风格的信息弹窗
   final Map<String, ChartTranslations> translations;
-  final List<String> timeFormat;
 
   //当屏幕滚动到尽头会调用，真为拉到屏幕右侧尽头，假为拉到屏幕左侧尽头
   final Function(bool)? onLoadMore;
@@ -54,14 +38,13 @@ class KChartWidget extends StatefulWidget {
   final ChartStyle chartStyle;
   final VerticalTextAlignment verticalTextAlignment;
   final bool isTrendLine;
-  final double xFrontPadding;
+  final KChartController? chartController;
 
   KChartWidget(
     this.datas,
     this.chartStyle,
     this.chartColors, {
     required this.isTrendLine,
-    this.xFrontPadding = 100,
     this.mainState = MainState.MA,
     this.secondaryState = SecondaryState.MACD,
     this.onSecondaryTap,
@@ -74,7 +57,6 @@ class KChartWidget extends StatefulWidget {
     this.showInfoDialog = true,
     this.materialInfoDialog = true,
     this.translations = kChartTranslations,
-    this.timeFormat = TimeFormat.YEAR_MONTH_DAY,
     this.onLoadMore,
     this.fixedLength = 2,
     this.maDayList = const [5, 10, 20],
@@ -83,6 +65,7 @@ class KChartWidget extends StatefulWidget {
     this.flingCurve = Curves.decelerate,
     this.isOnDrag,
     this.verticalTextAlignment = VerticalTextAlignment.left,
+    this.chartController,
   });
 
   @override
@@ -112,10 +95,14 @@ class _KChartWidgetState extends State<KChartWidget>
   double _lastScale = 1.0;
   bool isScale = false, isDrag = false, isLongPress = false, isOnTap = false;
 
+  // 是否正在完成缩放。缩放完成时，手指移动会引起drag事件，设置等待0.1s再完成缩放
+  bool _isFinishingScale = false;
+
   @override
   void initState() {
     super.initState();
     mInfoWindowStream = StreamController<InfoWindowEntity?>();
+    widget.chartController?.addListener(_onChartController);
   }
 
   @override
@@ -127,6 +114,7 @@ class _KChartWidgetState extends State<KChartWidget>
   void dispose() {
     mInfoWindowStream?.close();
     _controller?.dispose();
+    widget.chartController?.removeListener(_onChartController);
     super.dispose();
   }
 
@@ -139,10 +127,12 @@ class _KChartWidgetState extends State<KChartWidget>
     final _painter = ChartPainter(
       widget.chartStyle,
       widget.chartColors,
-      lines: lines, //For TrendLine
-      xFrontPadding: widget.xFrontPadding,
-      isTrendLine: widget.isTrendLine, //For TrendLine
-      selectY: mSelectY, //For TrendLine
+      lines: lines,
+      //For TrendLine
+      isTrendLine: widget.isTrendLine,
+      //For TrendLine
+      selectY: mSelectY,
+      //For TrendLine
       datas: widget.datas,
       scaleX: mScaleX,
       scrollX: mScrollX,
@@ -160,6 +150,7 @@ class _KChartWidgetState extends State<KChartWidget>
       fixedLength: widget.fixedLength,
       maDayList: widget.maDayList,
       verticalTextAlignment: widget.verticalTextAlignment,
+      dateTimeFormat: gerRealDateTimeFormat(),
     );
 
     return LayoutBuilder(
@@ -178,9 +169,10 @@ class _KChartWidgetState extends State<KChartWidget>
             if (!widget.isTrendLine &&
                 _painter.isInMainRect(details.localPosition)) {
               isOnTap = true;
-              if (mSelectX != details.globalPosition.dx &&
+              if (mSelectX != details.localPosition.dx &&
                   widget.isTapShowInfoDialog) {
-                mSelectX = details.globalPosition.dx;
+                mSelectX = details.localPosition.dx;
+                mSelectY = details.localPosition.dy;
                 notifyChanged();
               }
             }
@@ -202,72 +194,86 @@ class _KChartWidgetState extends State<KChartWidget>
               notifyChanged();
             }
           },
-          onHorizontalDragDown: (details) {
+          onScaleStart: (details) {
+            if (_isFinishingScale) return;
             isOnTap = false;
             _stopAnimation();
             _onDragChanged(true);
-          },
-          onHorizontalDragUpdate: (details) {
-            if (isScale || isLongPress) return;
-            mScrollX = ((details.primaryDelta ?? 0) / mScaleX + mScrollX)
-                .clamp(0.0, ChartPainter.maxScrollX)
-                .toDouble();
-            notifyChanged();
-          },
-          onHorizontalDragEnd: (DragEndDetails details) {
-            var velocity = details.velocity.pixelsPerSecond.dx;
-            _onFling(velocity);
-          },
-          onHorizontalDragCancel: () => _onDragChanged(false),
-          onScaleStart: (_) {
-            isScale = true;
+            if (details.pointerCount == 1) {
+              // drag
+              isDrag = true;
+              isScale = false;
+            } else {
+              // scale
+              isDrag = false;
+              isScale = true;
+            }
           },
           onScaleUpdate: (details) {
-            if (isDrag || isLongPress) return;
-            mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
+            if (isLongPress || _isFinishingScale) return;
+            if (details.pointerCount == 1) {
+              mScrollX = ((details.focalPointDelta.dx) / mScaleX + mScrollX)
+                  .clamp(0.0, ChartPainter.maxScrollX)
+                  .toDouble();
+            } else {
+              mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
+            }
             notifyChanged();
           },
-          onScaleEnd: (_) {
-            isScale = false;
-            _lastScale = mScaleX;
+          onScaleEnd: (details) {
+            if (_isFinishingScale) return;
+            if (isDrag) {
+              isDrag = false;
+              var velocity = details.velocity.pixelsPerSecond.dx;
+              _onFling(velocity);
+            }
+            if (isScale) {
+              isScale = false;
+              _lastScale = mScaleX;
+              _isFinishingScale = true;
+              Future.delayed(Duration(milliseconds: 100), () {
+                _isFinishingScale = false;
+              });
+            }
           },
           onLongPressStart: (details) {
             isOnTap = false;
             isLongPress = true;
-            if ((mSelectX != details.globalPosition.dx ||
-                    mSelectY != details.globalPosition.dy) &&
+            if ((mSelectX != details.localPosition.dx ||
+                    mSelectY != details.localPosition.dy) &&
                 !widget.isTrendLine) {
-              mSelectX = details.globalPosition.dx;
+              mSelectX = details.localPosition.dx;
+              mSelectY = details.localPosition.dy;
               notifyChanged();
             }
             //For TrendLine
             if (widget.isTrendLine && changeinXposition == null) {
-              mSelectX = changeinXposition = details.globalPosition.dx;
-              mSelectY = changeinYposition = details.globalPosition.dy;
+              mSelectX = changeinXposition = details.localPosition.dx;
+              mSelectY = changeinYposition = details.localPosition.dy;
               notifyChanged();
             }
             //For TrendLine
             if (widget.isTrendLine && changeinXposition != null) {
-              changeinXposition = details.globalPosition.dx;
-              changeinYposition = details.globalPosition.dy;
+              changeinXposition = details.localPosition.dx;
+              changeinYposition = details.localPosition.dy;
               notifyChanged();
             }
           },
           onLongPressMoveUpdate: (details) {
-            if ((mSelectX != details.globalPosition.dx ||
-                    mSelectY != details.globalPosition.dy) &&
+            if ((mSelectX != details.localPosition.dx ||
+                    mSelectY != details.localPosition.dy) &&
                 !widget.isTrendLine) {
-              mSelectX = details.globalPosition.dx;
+              mSelectX = details.localPosition.dx;
               mSelectY = details.localPosition.dy;
               notifyChanged();
             }
             if (widget.isTrendLine) {
               mSelectX =
-                  mSelectX + (details.globalPosition.dx - changeinXposition!);
-              changeinXposition = details.globalPosition.dx;
+                  mSelectX + (details.localPosition.dx - changeinXposition!);
+              changeinXposition = details.localPosition.dx;
               mSelectY =
-                  mSelectY + (details.globalPosition.dy - changeinYposition!);
-              changeinYposition = details.globalPosition.dy;
+                  mSelectY + (details.localPosition.dy - changeinYposition!);
+              changeinYposition = details.localPosition.dy;
               notifyChanged();
             }
           },
@@ -289,6 +295,13 @@ class _KChartWidgetState extends State<KChartWidget>
         );
       },
     );
+  }
+
+  void _onChartController() {
+    setState(() {
+      isOnTap = false;
+      mInfoWindowStream?.sink.add(null);
+    });
   }
 
   void _stopAnimation({bool needNotify = true}) {
@@ -366,10 +379,11 @@ class _KChartWidgetState extends State<KChartWidget>
             entity.close.toStringAsFixed(widget.fixedLength),
             "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
             "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
-            if (entityAmount != null) entityAmount.toInt().toString()
+            if (widget.volHidden == false && entityAmount != null)
+              entityAmount.toInt().toString()
           ];
-          final dialogPadding = 4.0;
-          final dialogWidth = mWidth / 3;
+          final dialogPadding = widget.chartStyle.selectPadding ?? 5.0;
+          final dialogWidth = widget.chartStyle.selectWidth ?? mWidth / 3;
           return Container(
             margin: EdgeInsets.only(
                 left: snapshot.data!.isLeft
@@ -378,13 +392,21 @@ class _KChartWidgetState extends State<KChartWidget>
                 top: 25),
             width: dialogWidth,
             decoration: BoxDecoration(
-                color: widget.chartColors.selectFillColor,
-                border: Border.all(
-                    color: widget.chartColors.selectBorderColor, width: 0.5)),
+              color: widget.chartColors.selectFillColor,
+              border: Border.all(
+                color: widget.chartColors.selectBorderColor,
+                width: widget.chartStyle.selectBorderWidth,
+              ),
+              borderRadius: BorderRadius.circular(
+                widget.chartStyle.selectBorderRadius,
+              ),
+            ),
             child: ListView.builder(
-              padding: EdgeInsets.all(dialogPadding),
+              padding: EdgeInsets.symmetric(
+                horizontal: dialogPadding,
+                vertical: dialogPadding - 2.5, // item上下各有2.5的间隔
+              ),
               itemCount: infos.length,
-              itemExtent: 14.0,
               shrinkWrap: true,
               itemBuilder: (context, index) {
                 final translations = widget.isChinese
@@ -418,13 +440,41 @@ class _KChartWidgetState extends State<KChartWidget>
         Text(info, style: TextStyle(color: color, fontSize: 10.0)),
       ],
     );
-    return widget.materialInfoDialog
-        ? Material(color: Colors.transparent, child: infoWidget)
-        : infoWidget;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2.5),
+      child: widget.materialInfoDialog
+          ? Material(color: Colors.transparent, child: infoWidget)
+          : infoWidget,
+    );
   }
 
   String getDate(int? date) => dateFormat(
       DateTime.fromMillisecondsSinceEpoch(
           date ?? DateTime.now().millisecondsSinceEpoch),
-      widget.timeFormat);
+      gerRealDateTimeFormat());
+
+  /// 根据返回数据的时间间隔计算正确的时间格式
+  List<String> gerRealDateTimeFormat() {
+    if (widget.chartStyle.dateTimeFormat != null) {
+      return widget.chartStyle.dateTimeFormat!;
+    }
+
+    if ((widget.datas?.length ?? 0) < 2) {
+      return [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];
+    }
+
+    int firstTime = widget.datas!.first.time ?? 0;
+    int secondTime = widget.datas![1].time ?? 0;
+    int time = secondTime - firstTime;
+    time ~/= 1000;
+    //月线
+    if (time >= 24 * 60 * 60 * 28)
+      return [yy, '-', mm];
+    //日线等
+    else if (time >= 24 * 60 * 60)
+      return [yy, '-', mm, '-', dd];
+    //小时线等
+    else
+      return [mm, '-', dd, ' ', HH, ':', nn];
+  }
 }

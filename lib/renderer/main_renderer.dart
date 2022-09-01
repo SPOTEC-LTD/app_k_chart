@@ -5,6 +5,7 @@ import '../k_chart_widget.dart' show MainState;
 import 'base_chart_renderer.dart';
 
 enum VerticalTextAlignment { left, right }
+
 //For TrendLine
 double? trendLineMax;
 double? trendLineScale;
@@ -18,7 +19,6 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
 
   //绘制的内容区域
   late Rect _contentRect;
-  double _contentPadding = 5.0;
   List<int> maDayList;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
@@ -56,9 +56,9 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       ..color = this.chartColors.kLineColor;
     _contentRect = Rect.fromLTRB(
         chartRect.left,
-        chartRect.top + _contentPadding,
+        chartRect.top + chartStyle.mainVerticalPadding,
         chartRect.right,
-        chartRect.bottom - _contentPadding);
+        chartRect.bottom - chartStyle.mainVerticalPadding);
     if (maxValue == minValue) {
       maxValue *= 1.5;
       minValue /= 2;
@@ -155,7 +155,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       tileMode: TileMode.clamp,
-      colors: [this.chartColors.lineFillColor, this.chartColors.lineFillInsideColor],
+      colors: [
+        this.chartColors.lineFillColor,
+        this.chartColors.lineFillInsideColor
+      ],
     ).createShader(Rect.fromLTRB(
         chartRect.left, chartRect.top, chartRect.right, chartRect.bottom));
     mLineFillPaint..shader = mLineFillShader;
@@ -238,9 +241,17 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
 
   @override
   void drawVerticalText(canvas, textStyle, int gridRows) {
-    double rowSpace = chartRect.height / gridRows;
+    double rowSpace = _contentRect.height / gridRows;
     for (var i = 0; i <= gridRows; ++i) {
-      double value = (gridRows - i) * rowSpace / scaleY + minValue;
+      double value;
+      // 避免第一个和最后一个计算丢失精度
+      if (i == 0) {
+        value = maxValue;
+      } else if (i == gridRows) {
+        value = minValue;
+      } else {
+        value = (gridRows - i) * rowSpace / scaleY + minValue;
+      }
       TextSpan span = TextSpan(text: "${format(value)}", style: textStyle);
       TextPainter tp =
           TextPainter(text: span, textDirection: TextDirection.ltr);
@@ -257,10 +268,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       }
 
       if (i == 0) {
-        tp.paint(canvas, Offset(offsetX, topPadding));
+        tp.paint(canvas, Offset(offsetX, _contentRect.top - tp.height / 2));
       } else {
-        tp.paint(
-            canvas, Offset(offsetX, rowSpace * i - tp.height + topPadding));
+        tp.paint(canvas,
+            Offset(offsetX, rowSpace * i + _contentRect.top - tp.height / 2));
       }
     }
   }
@@ -274,17 +285,21 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
           Offset(chartRect.width, rowSpace * i + topPadding), gridPaint);
     }
     double columnSpace = chartRect.width / gridColumns;
-    for (int i = 0; i <= columnSpace; i++) {
+    for (int i = 1; i < gridColumns; i++) {
       canvas.drawLine(Offset(columnSpace * i, topPadding / 3),
           Offset(columnSpace * i, chartRect.bottom), gridPaint);
     }
   }
 
   @override
-  double getY(double y) {
+  double getY(double price) {
     //For TrendLine
     updateTrendLineData();
-    return (maxValue - y) * scaleY + _contentRect.top;
+    return (maxValue - price) * scaleY + _contentRect.top;
+  }
+
+  double getPirce(double y) {
+    return (-y + _contentRect.top) / scaleY + maxValue;
   }
 
   void updateTrendLineData() {

@@ -163,6 +163,7 @@ class DataUtil {
   }
 
   static void calcKDJ(List<KLineEntity> dataList) {
+    if (dataList.isEmpty) return;
     var preK = 50.0;
     var preD = 50.0;
     final tmp = dataList.first;
