@@ -5,6 +5,8 @@ import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/extension/map_ext.dart';
 import 'package:k_chart/flutter_k_chart.dart';
 
+import 'entity/draw_graph_entity.dart';
+
 enum MainState { MA, BOLL, NONE }
 
 enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
@@ -38,7 +40,14 @@ class KChartWidget extends StatefulWidget {
   final ChartStyle chartStyle;
   final VerticalTextAlignment verticalTextAlignment;
   final bool isTrendLine;
+
   final KChartController? chartController;
+
+  /// 是否启用绘图模式
+  final bool enableDraw;
+
+  /// 画图点击事件超出主图范围
+  final VoidCallback? outMainTap;
 
   KChartWidget(
     this.datas,
@@ -66,6 +75,8 @@ class KChartWidget extends StatefulWidget {
     this.isOnDrag,
     this.verticalTextAlignment = VerticalTextAlignment.left,
     this.chartController,
+    this.enableDraw = false,
+    this.outMainTap,
   });
 
   @override
@@ -98,11 +109,25 @@ class _KChartWidgetState extends State<KChartWidget>
   // 是否正在完成缩放。缩放完成时，手指移动会引起drag事件，设置等待0.1s再完成缩放
   bool _isFinishingScale = false;
 
+  /// 长按手势当前点的value值
+  DrawGraphRawValue? _currentPressValue;
+
+  /// 选中锚点在DrawGraphEntity的value数组中的索引
+  int? _pressAnchorIndex;
+
+  /// 是否可以绘制手画的图形
+  bool get _enableDraw => widget.enableDraw && !widget.isLine;
+
+  final _defaultChartController = KChartController();
+
+  KChartController get _chartController =>
+      widget.chartController ?? _defaultChartController;
+
   @override
   void initState() {
     super.initState();
     mInfoWindowStream = StreamController<InfoWindowEntity?>();
-    widget.chartController?.addListener(_onChartController);
+    _chartController.addListener(_onChartController);
   }
 
   @override
@@ -114,7 +139,7 @@ class _KChartWidgetState extends State<KChartWidget>
   void dispose() {
     mInfoWindowStream?.close();
     _controller?.dispose();
-    widget.chartController?.removeListener(_onChartController);
+    _chartController.removeListener(_onChartController);
     super.dispose();
   }
 
@@ -151,6 +176,7 @@ class _KChartWidgetState extends State<KChartWidget>
       maDayList: widget.maDayList,
       verticalTextAlignment: widget.verticalTextAlignment,
       dateTimeFormat: gerRealDateTimeFormat(),
+      drawnGraphs: _chartController.drawnGraphs,
     );
 
     return LayoutBuilder(
@@ -168,12 +194,16 @@ class _KChartWidgetState extends State<KChartWidget>
 
             if (!widget.isTrendLine &&
                 _painter.isInMainRect(details.localPosition)) {
-              isOnTap = true;
-              if (mSelectX != details.localPosition.dx &&
-                  widget.isTapShowInfoDialog) {
-                mSelectX = details.localPosition.dx;
-                mSelectY = details.localPosition.dy;
-                notifyChanged();
+              if (_enableDraw) {
+                _mainRectTappedWithEnableDraw(_painter, details.localPosition);
+              } else {
+                isOnTap = true;
+                if (mSelectX != details.localPosition.dx &&
+                    widget.isTapShowInfoDialog) {
+                  mSelectX = details.localPosition.dx;
+                  mSelectY = details.localPosition.dy;
+                  notifyChanged();
+                }
               }
             }
             if (widget.isTrendLine && !isLongPress && enableCordRecord) {
@@ -237,51 +267,63 @@ class _KChartWidgetState extends State<KChartWidget>
             }
           },
           onLongPressStart: (details) {
-            isOnTap = false;
-            isLongPress = true;
-            if ((mSelectX != details.localPosition.dx ||
-                    mSelectY != details.localPosition.dy) &&
-                !widget.isTrendLine) {
-              mSelectX = details.localPosition.dx;
-              mSelectY = details.localPosition.dy;
-              notifyChanged();
-            }
-            //For TrendLine
-            if (widget.isTrendLine && changeinXposition == null) {
-              mSelectX = changeinXposition = details.localPosition.dx;
-              mSelectY = changeinYposition = details.localPosition.dy;
-              notifyChanged();
-            }
-            //For TrendLine
-            if (widget.isTrendLine && changeinXposition != null) {
-              changeinXposition = details.localPosition.dx;
-              changeinYposition = details.localPosition.dy;
-              notifyChanged();
+            if (_enableDraw) {
+              _beginMoveActiveGraph(_painter, details.localPosition);
+            } else {
+              isOnTap = false;
+              isLongPress = true;
+              if ((mSelectX != details.localPosition.dx ||
+                      mSelectY != details.localPosition.dy) &&
+                  !widget.isTrendLine) {
+                mSelectX = details.localPosition.dx;
+                mSelectY = details.localPosition.dy;
+                notifyChanged();
+              }
+              //For TrendLine
+              if (widget.isTrendLine && changeinXposition == null) {
+                mSelectX = changeinXposition = details.localPosition.dx;
+                mSelectY = changeinYposition = details.localPosition.dy;
+                notifyChanged();
+              }
+              //For TrendLine
+              if (widget.isTrendLine && changeinXposition != null) {
+                changeinXposition = details.localPosition.dx;
+                changeinYposition = details.localPosition.dy;
+                notifyChanged();
+              }
             }
           },
           onLongPressMoveUpdate: (details) {
-            if ((mSelectX != details.localPosition.dx ||
-                    mSelectY != details.localPosition.dy) &&
-                !widget.isTrendLine) {
-              mSelectX = details.localPosition.dx;
-              mSelectY = details.localPosition.dy;
-              notifyChanged();
-            }
-            if (widget.isTrendLine) {
-              mSelectX =
-                  mSelectX + (details.localPosition.dx - changeinXposition!);
-              changeinXposition = details.localPosition.dx;
-              mSelectY =
-                  mSelectY + (details.localPosition.dy - changeinYposition!);
-              changeinYposition = details.localPosition.dy;
-              notifyChanged();
+            if (_enableDraw) {
+              _moveActiveGraph(_painter, details.localPosition);
+            } else {
+              if ((mSelectX != details.localPosition.dx ||
+                      mSelectY != details.localPosition.dy) &&
+                  !widget.isTrendLine) {
+                mSelectX = details.localPosition.dx;
+                mSelectY = details.localPosition.dy;
+                notifyChanged();
+              }
+              if (widget.isTrendLine) {
+                mSelectX =
+                    mSelectX + (details.localPosition.dx - changeinXposition!);
+                changeinXposition = details.localPosition.dx;
+                mSelectY =
+                    mSelectY + (details.localPosition.dy - changeinYposition!);
+                changeinYposition = details.localPosition.dy;
+                notifyChanged();
+              }
             }
           },
           onLongPressEnd: (details) {
-            isLongPress = false;
-            enableCordRecord = true;
-            mInfoWindowStream?.sink.add(null);
-            notifyChanged();
+            if (_enableDraw) {
+              _currentPressValue = null;
+            } else {
+              isLongPress = false;
+              enableCordRecord = true;
+              mInfoWindowStream?.sink.add(null);
+              notifyChanged();
+            }
           },
           child: Stack(
             children: <Widget>[
@@ -298,10 +340,10 @@ class _KChartWidgetState extends State<KChartWidget>
   }
 
   void _onChartController() {
-    setState(() {
-      isOnTap = false;
-      mInfoWindowStream?.sink.add(null);
-    });
+    isLongPress = false;
+    isOnTap = false;
+    mInfoWindowStream?.sink.add(null);
+    notifyChanged();
   }
 
   void _stopAnimation({bool needNotify = true}) {
@@ -476,5 +518,73 @@ class _KChartWidgetState extends State<KChartWidget>
     //小时线等
     else
       return [mm, '-', dd, ' ', HH, ':', nn];
+  }
+
+  void _mainRectTappedWithEnableDraw(ChartPainter painter, Offset touchPoint) {
+    if (_chartController.drawType == null) {
+      painter.detectDrawnGraphs(touchPoint);
+      notifyChanged();
+    } else {
+      _drawDrawnGraph(painter, touchPoint);
+    }
+  }
+
+  void _drawDrawnGraph(ChartPainter painter, Offset touchPoint) {
+    switch (_chartController.drawType!) {
+      case DrawnGraphType.segmentLine:
+      case DrawnGraphType.rayLine:
+      case DrawnGraphType.straightLine:
+      case DrawnGraphType.rectangle:
+        _drawTwoAnchorGraph(painter, touchPoint);
+        break;
+    }
+  }
+
+  /// 绘制只有两个锚点的图形
+  void _drawTwoAnchorGraph(ChartPainter painter, Offset touchPoint) {
+    final drawnGraphs = List.of(_chartController.drawnGraphs);
+    if (drawnGraphs.isEmpty || drawnGraphs.last.values.length == 2) {
+      final drawingGraph = DrawnGraphEntity(
+        drawType: _chartController.drawType!,
+        values: [],
+        isActive: true,
+      );
+      drawnGraphs.add(drawingGraph);
+    }
+    // 继续绘制当前图形
+    if (drawnGraphs.last.values.length < 2) {
+      var graphValue = painter.calculateTouchRawValue(touchPoint);
+      if (graphValue == null) {
+        widget.outMainTap?.call();
+      } else {
+        drawnGraphs.last.values.add(graphValue);
+      }
+    }
+    // 结束绘制当前图形
+    if (drawnGraphs.last.values.length == 2) {
+      _chartController.drawType = null;
+    }
+    _chartController.drawnGraphs = drawnGraphs;
+  }
+
+  /// 长按开始移动正在编辑的图形
+  void _beginMoveActiveGraph(ChartPainter painter, Offset position) {
+    if (!painter.canBeginMoveActiveGraph(position)) {
+      return;
+    }
+    _currentPressValue = painter.calculateTouchRawValue(position);
+    // 可能为null
+    _pressAnchorIndex = painter.detectAnchorPointIndex(position);
+  }
+
+  /// 移动正在编辑的图形
+  void _moveActiveGraph(ChartPainter painter, Offset position) {
+    if (_currentPressValue == null || !painter.haveActiveDrawnGraph()) {
+      return;
+    }
+    var nextValue = painter.calculateMoveRawValue(position);
+    painter.moveActiveGraph(_currentPressValue!, nextValue, _pressAnchorIndex);
+    _currentPressValue = nextValue;
+    notifyChanged();
   }
 }

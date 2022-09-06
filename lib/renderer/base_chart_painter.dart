@@ -293,7 +293,11 @@ abstract class BaseChartPainter extends CustomPainter {
   ///根据索引索取x坐标
   ///+ mPointWidth / 2防止第一根和最后一根k线显示不���
   ///@param position 索引值
-  double getX(int position) => position * mPointWidth + mPointWidth / 2;
+  double getX(num position) => position * mPointWidth + mPointWidth / 2;
+
+  ///根据x坐标获取索引
+  double getDoubleIndex(double position) =>
+      (position - mPointWidth / 2) / mPointWidth;
 
   KLineEntity getItem(int position) {
     return datas![position];

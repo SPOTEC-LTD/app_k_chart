@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:k_chart/chart_style.dart';
 import 'package:k_chart/chart_translations.dart';
+import 'package:k_chart/entity/draw_graph_entity.dart';
 import 'package:k_chart/flutter_k_chart.dart';
 import 'package:k_chart/k_chart_widget.dart';
 
@@ -50,6 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   ChartStyle chartStyle = ChartStyle();
   ChartColors chartColors = ChartColors();
+  final _chartController = KChartController();
 
   @override
   void initState() {
@@ -107,6 +109,8 @@ class _MyHomePageState extends State<MyHomePage> {
               datas,
               chartStyle,
               chartColors,
+              chartController: _chartController,
+              enableDraw: true,
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -148,6 +152,24 @@ class _MyHomePageState extends State<MyHomePage> {
     return Wrap(
       alignment: WrapAlignment.spaceEvenly,
       children: <Widget>[
+        button("Segment", onPressed: () {
+          _chartController.drawType = DrawnGraphType.segmentLine;
+        }),
+        button("Ray", onPressed: () {
+          _chartController.drawType = DrawnGraphType.rayLine;
+        }),
+        button("Straight", onPressed: () {
+          _chartController.drawType = DrawnGraphType.straightLine;
+        }),
+        button("Rect", onPressed: () {
+          _chartController.drawType = DrawnGraphType.rectangle;
+        }),
+        button("Clear All", onPressed: () {
+          _chartController.removeAllDrawnGraphs();
+        }),
+        button("Clear Active", onPressed: () {
+          _chartController.removeActiveGraph();
+        }),
         button("Time Mode", onPressed: () => isLine = true),
         button("K Line Mode", onPressed: () => isLine = false),
         button("TrendLine", onPressed: () => _isTrendLine = !_isTrendLine),
