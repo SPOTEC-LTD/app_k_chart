@@ -296,7 +296,7 @@ abstract class BaseChartPainter extends CustomPainter {
   double getX(num position) => position * mPointWidth + mPointWidth / 2;
 
   ///根据x坐标获取索引
-  double getDoubleIndex(double position) =>
+  double getIndex(double position) =>
       (position - mPointWidth / 2) / mPointWidth;
 
   KLineEntity getItem(int position) {
