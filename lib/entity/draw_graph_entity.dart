@@ -1,7 +1,10 @@
 enum DrawnGraphType {
   segmentLine,
+  horizontalSegmentLine,
+  verticalSegmentLine,
   rayLine,
   straightLine,
+  horizontalStraightLine,
   rectangle,
 }
 

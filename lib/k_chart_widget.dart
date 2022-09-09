@@ -547,17 +547,23 @@ class _KChartWidgetState extends State<KChartWidget>
   void _drawDrawnGraph(GraphPainter painter, Offset touchPoint) {
     switch (_chartController.drawType!) {
       case DrawnGraphType.segmentLine:
+      case DrawnGraphType.horizontalSegmentLine:
+      case DrawnGraphType.verticalSegmentLine:
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
       case DrawnGraphType.rectangle:
         _drawTwoAnchorGraph(painter, touchPoint);
         break;
+      case DrawnGraphType.horizontalStraightLine:
+        _drawHorizontalStraightLine(painter, touchPoint);
+        break;
     }
   }
 
-  /// 绘制只有两个锚点的图形
+  /// 绘制有两个锚点的图形
   void _drawTwoAnchorGraph(GraphPainter painter, Offset touchPoint) {
     final drawnGraphs = List.of(_chartController.drawnGraphs);
+    // 没有绘制的图形，或者绘制的图形都已经完成绘制，则添加新图形
     if (drawnGraphs.isEmpty || drawnGraphs.last.values.length == 2) {
       final drawingGraph = DrawnGraphEntity(
         drawType: _chartController.drawType!,
@@ -572,6 +578,13 @@ class _KChartWidgetState extends State<KChartWidget>
       if (graphValue == null) {
         widget.outMainTap?.call();
       } else {
+        if (drawnGraphs.last.values.length == 1) {
+          graphValue = _getTwoAnchorLastGraphValue(
+            _chartController.drawType!,
+            drawnGraphs.last.values[0],
+            graphValue,
+          );
+        }
         drawnGraphs.last.values.add(graphValue);
       }
     }
@@ -580,6 +593,42 @@ class _KChartWidgetState extends State<KChartWidget>
       _chartController.drawType = null;
     }
     _chartController.drawnGraphs = drawnGraphs;
+  }
+
+  /// 两个锚点图形的第二个锚点的value
+  DrawGraphRawValue _getTwoAnchorLastGraphValue(
+    DrawnGraphType drawType,
+    DrawGraphRawValue firstValue,
+    DrawGraphRawValue secondValue,
+  ) {
+    if (drawType == DrawnGraphType.horizontalSegmentLine) {
+      return DrawGraphRawValue(secondValue.index, firstValue.price);
+    }
+    if (drawType == DrawnGraphType.verticalSegmentLine) {
+      return DrawGraphRawValue(firstValue.index, secondValue.price);
+    }
+    return secondValue;
+  }
+
+  /// 绘制水平直线
+  void _drawHorizontalStraightLine(GraphPainter painter, Offset touchPoint) {
+    final drawnGraphs = List.of(_chartController.drawnGraphs);
+    final graphValue = painter.calculateTouchRawValue(touchPoint);
+    if (graphValue == null) {
+      widget.outMainTap?.call();
+    } else {
+      // 第二个点不会被绘制
+      final graphValue2 =
+          DrawGraphRawValue(graphValue.index + 5, graphValue.price);
+      final drawingGraph = DrawnGraphEntity(
+        drawType: _chartController.drawType!,
+        values: [graphValue, graphValue2],
+        isActive: true,
+      );
+      drawnGraphs.add(drawingGraph);
+      _chartController.drawType = null;
+      _chartController.drawnGraphs = drawnGraphs;
+    }
   }
 
   /// 长按开始移动正在编辑的图形

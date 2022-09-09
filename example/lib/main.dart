@@ -153,11 +153,20 @@ class _MyHomePageState extends State<MyHomePage> {
         button("Segment", onPressed: () {
           _chartController.drawType = DrawnGraphType.segmentLine;
         }),
+        button("HorizontalSegment", onPressed: () {
+          _chartController.drawType = DrawnGraphType.horizontalSegmentLine;
+        }),
+        button("VerticalSegment", onPressed: () {
+          _chartController.drawType = DrawnGraphType.verticalSegmentLine;
+        }),
         button("Ray", onPressed: () {
           _chartController.drawType = DrawnGraphType.rayLine;
         }),
         button("Straight", onPressed: () {
           _chartController.drawType = DrawnGraphType.straightLine;
+        }),
+        button("HorizontalStraight", onPressed: () {
+          _chartController.drawType = DrawnGraphType.horizontalStraightLine;
         }),
         button("Rect", onPressed: () {
           _chartController.drawType = DrawnGraphType.rectangle;

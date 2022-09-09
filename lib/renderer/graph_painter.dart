@@ -45,7 +45,6 @@ class GraphPainter extends CustomPainter {
     drawnGraphs.forEach((graph) {
       _drawSingleGraph(canvas, graph);
     });
-    _drawGraphAnchorPoints(canvas);
     canvas.restore();
   }
 
@@ -59,48 +58,60 @@ class GraphPainter extends CustomPainter {
     if (graph == null) {
       return;
     }
-    var points = graph.values.map((value) {
+    switch (graph.drawType) {
+      case DrawnGraphType.segmentLine:
+      case DrawnGraphType.horizontalSegmentLine:
+      case DrawnGraphType.verticalSegmentLine:
+        _drawSegmentLine(canvas, graph);
+        break;
+      case DrawnGraphType.rayLine:
+        _drawRayLine(canvas, graph);
+        break;
+      case DrawnGraphType.straightLine:
+      case DrawnGraphType.horizontalStraightLine:
+        _drawStraightLine(canvas, graph);
+        break;
+      case DrawnGraphType.rectangle:
+        _drawRectangle(canvas, graph);
+        break;
+      default:
+    }
+    _drawActiveAnchorPoints(canvas, graph);
+  }
+
+  /// 获取图形的锚点
+  List<Offset> _getAnchorPoints(DrawnGraphEntity graph) {
+    return graph.values.map((value) {
       double dx = _translateIndexToX(value.index);
       double dy = chartPainter.getMainY(value.price);
       return Offset(dx, dy);
     }).toList();
-    // 两点相同则不绘制
-    if (points.length < 2 || points.first == points.last) {
-      return;
-    }
-    switch (graph.drawType) {
-      case DrawnGraphType.segmentLine:
-        _drawSegmentLine(canvas, points);
-        break;
-      case DrawnGraphType.rayLine:
-        _drawRayLine(canvas, points);
-        break;
-      case DrawnGraphType.straightLine:
-        _drawStraightLine(canvas, points);
-        break;
-      case DrawnGraphType.rectangle:
-        _drawRectangle(canvas, points);
-        break;
-      default:
-    }
   }
 
   /// 绘制激活的图形的锚点
-  void _drawGraphAnchorPoints(Canvas canvas) {
-    _activeDrawnGraph?.values.forEach((value) {
-      double dx = _translateIndexToX(value.index);
-      double dy = chartPainter.getMainY(value.price);
-      canvas.drawCircle(Offset(dx, dy), _graphDetectWidth, _graphPaint);
+  void _drawActiveAnchorPoints(Canvas canvas, DrawnGraphEntity graph) {
+    if (!graph.isActive) return;
+    final points = _getAnchorPoints(graph);
+    // 水平直线只显示一个锚点
+    if (graph.drawType == DrawnGraphType.horizontalStraightLine) {
+      points.removeLast();
+    }
+    points.forEach((element) {
+      canvas.drawCircle(element, _graphDetectWidth, _graphPaint);
     });
   }
 
   /// 绘制线段
-  void _drawSegmentLine(Canvas canvas, List<Offset> points) {
+  void _drawSegmentLine(Canvas canvas, DrawnGraphEntity graph) {
+    if (graph.values.length != 2) return;
+    final points = _getAnchorPoints(graph);
     canvas.drawLine(points.first, points.last, _graphPaint);
   }
 
   /// 绘制射线
-  void _drawRayLine(Canvas canvas, List<Offset> points) {
+  void _drawRayLine(Canvas canvas, DrawnGraphEntity graph) {
+    if (graph.values.length != 2) return;
+    final points = _getAnchorPoints(graph);
     var p1 = points.first;
     var p2 = points.last;
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
@@ -118,7 +129,9 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 绘制直线
-  void _drawStraightLine(Canvas canvas, List<Offset> points) {
+  void _drawStraightLine(Canvas canvas, DrawnGraphEntity graph) {
+    if (graph.values.length != 2) return;
+    final points = _getAnchorPoints(graph);
     var p1 = points.first;
     var p2 = points.last;
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
@@ -127,7 +140,9 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 绘制矩形
-  void _drawRectangle(Canvas canvas, List<Offset> points) {
+  void _drawRectangle(Canvas canvas, DrawnGraphEntity graph) {
+    if (graph.values.length != 2) return;
+    final points = _getAnchorPoints(graph);
     var rect = Rect.fromPoints(points.first, points.last);
     canvas.drawRect(rect, _graphPaint);
   }
@@ -197,8 +212,11 @@ class GraphPainter extends CustomPainter {
     var singleLineGraphs = drawnGraphs.where((graph) {
       switch (graph.drawType) {
         case DrawnGraphType.segmentLine:
+        case DrawnGraphType.horizontalSegmentLine:
+        case DrawnGraphType.verticalSegmentLine:
         case DrawnGraphType.rayLine:
         case DrawnGraphType.straightLine:
+        case DrawnGraphType.horizontalStraightLine:
           return true;
         default:
           return false;
@@ -264,8 +282,11 @@ class GraphPainter extends CustomPainter {
     }
     switch (_activeDrawnGraph!.drawType) {
       case DrawnGraphType.segmentLine:
+      case DrawnGraphType.horizontalSegmentLine:
+      case DrawnGraphType.verticalSegmentLine:
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
+      case DrawnGraphType.horizontalStraightLine:
         var distance = _distanceToSingleLine(touchPoint, _activeDrawnGraph!);
         return distance < _graphDetectWidth;
       case DrawnGraphType.rectangle:
@@ -281,12 +302,19 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 移动手画图形。如果anchorIndex为null，移动整个图形；如果不为null，则移动单个锚点
-  void moveActiveGraph(DrawGraphRawValue currentValue,
-      DrawGraphRawValue nextValue, int? anchorIndex) {
+  void moveActiveGraph(
+    DrawGraphRawValue currentValue,
+    DrawGraphRawValue nextValue,
+    int? anchorIndex,
+  ) {
     // 计算和上一个点的偏移
     var offset = Offset(nextValue.index - currentValue.index,
         nextValue.price - currentValue.price);
-    if (anchorIndex == null) {
+    // 没有选中锚点，或者激活的图形是一些特殊图形时，整体移动
+    if (anchorIndex == null ||
+        _activeDrawnGraph!.drawType == DrawnGraphType.horizontalSegmentLine ||
+        _activeDrawnGraph!.drawType == DrawnGraphType.verticalSegmentLine ||
+        _activeDrawnGraph!.drawType == DrawnGraphType.horizontalStraightLine) {
       _activeDrawnGraph?.values.forEach((value) {
         value.index += offset.dx;
         value.price += offset.dy;
@@ -322,6 +350,8 @@ class GraphPainter extends CustomPainter {
 
     switch (graph.drawType) {
       case DrawnGraphType.segmentLine:
+      case DrawnGraphType.horizontalSegmentLine:
+      case DrawnGraphType.verticalSegmentLine:
         return DistanceUtil.distanceToSegment(touchPoint, p1, p2);
       case DrawnGraphType.rayLine:
         if (p1.dx < p2.dx) {
@@ -332,6 +362,7 @@ class GraphPainter extends CustomPainter {
           return DistanceUtil.distanceToSegment(touchPoint, leftEdgePoint, p1);
         }
       case DrawnGraphType.straightLine:
+      case DrawnGraphType.horizontalStraightLine:
         return DistanceUtil.distanceToSegment(
             touchPoint, leftEdgePoint, rightEdgePoint);
       default:
