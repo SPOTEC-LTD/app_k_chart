@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/extension/map_ext.dart';
@@ -552,7 +554,8 @@ class _KChartWidgetState extends State<KChartWidget>
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
       case DrawnGraphType.rectangle:
-        _drawTwoAnchorGraph(painter, touchPoint);
+      case DrawnGraphType.parallelLine:
+        _drawMultiAnchorGraph(painter, touchPoint);
         break;
       case DrawnGraphType.horizontalStraightLine:
         _drawHorizontalStraightLine(painter, touchPoint);
@@ -560,11 +563,12 @@ class _KChartWidgetState extends State<KChartWidget>
     }
   }
 
-  /// 绘制有两个锚点的图形
-  void _drawTwoAnchorGraph(GraphPainter painter, Offset touchPoint) {
+  /// 绘制有多个锚点的图形
+  void _drawMultiAnchorGraph(GraphPainter painter, Offset touchPoint) {
+    final anchorCount = _chartController.drawType!.anchorCount;
     final drawnGraphs = List.of(_chartController.drawnGraphs);
     // 没有绘制的图形，或者绘制的图形都已经完成绘制，则添加新图形
-    if (drawnGraphs.isEmpty || drawnGraphs.last.values.length == 2) {
+    if (drawnGraphs.isEmpty || !drawnGraphs.last.isActive) {
       final drawingGraph = DrawnGraphEntity(
         drawType: _chartController.drawType!,
         values: [],
@@ -573,15 +577,21 @@ class _KChartWidgetState extends State<KChartWidget>
       drawnGraphs.add(drawingGraph);
     }
     // 继续绘制当前图形
-    if (drawnGraphs.last.values.length < 2) {
+    if (drawnGraphs.last.values.length < anchorCount) {
       var graphValue = painter.calculateTouchRawValue(touchPoint);
       if (graphValue == null) {
         widget.outMainTap?.call();
       } else {
-        if (drawnGraphs.last.values.length == 1) {
-          graphValue = _getTwoAnchorLastGraphValue(
+        final sameValue = drawnGraphs.last.values.firstWhereOrNull((element) {
+          return element.index == graphValue!.index &&
+              element.price == graphValue.price;
+        });
+        // 是否已经存在相同的锚点
+        if (sameValue != null) return;
+        if (drawnGraphs.last.values.length == anchorCount - 1) {
+          graphValue = _getLastAnchorGraphValue(
             _chartController.drawType!,
-            drawnGraphs.last.values[0],
+            drawnGraphs.last.values,
             graphValue,
           );
         }
@@ -589,25 +599,37 @@ class _KChartWidgetState extends State<KChartWidget>
       }
     }
     // 结束绘制当前图形
-    if (drawnGraphs.last.values.length == 2) {
+    if (drawnGraphs.last.values.length == anchorCount) {
       _chartController.drawType = null;
     }
     _chartController.drawnGraphs = drawnGraphs;
   }
 
-  /// 两个锚点图形的第二个锚点的value
-  DrawGraphRawValue _getTwoAnchorLastGraphValue(
+  /// 全部锚点图形的最后一个的value
+  DrawGraphRawValue _getLastAnchorGraphValue(
     DrawnGraphType drawType,
-    DrawGraphRawValue firstValue,
-    DrawGraphRawValue secondValue,
+    List<DrawGraphRawValue> values,
+    DrawGraphRawValue lastValue,
   ) {
     if (drawType == DrawnGraphType.horizontalSegmentLine) {
-      return DrawGraphRawValue(secondValue.index, firstValue.price);
+      lastValue.price = values.first.price;
     }
     if (drawType == DrawnGraphType.verticalSegmentLine) {
-      return DrawGraphRawValue(firstValue.index, secondValue.price);
+      lastValue.index = values.first.index;
     }
-    return secondValue;
+    if (drawType == DrawnGraphType.parallelLine) {
+      final firstValue = values[0];
+      final secondValue = values[1];
+      final minIndex = min(firstValue.index, secondValue.index);
+      final maxIndex = max(firstValue.index, secondValue.index);
+      if (lastValue.index < minIndex) {
+        lastValue.index = minIndex;
+      }
+      if (lastValue.index > maxIndex) {
+        lastValue.index = maxIndex;
+      }
+    }
+    return lastValue;
   }
 
   /// 绘制水平直线

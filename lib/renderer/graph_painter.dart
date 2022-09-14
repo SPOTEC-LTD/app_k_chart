@@ -1,6 +1,8 @@
 // Author: Dean.Liu
 // DateTime: 2022/09/06 15:50
 
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/renderer/index.dart';
@@ -74,18 +76,26 @@ class GraphPainter extends CustomPainter {
       case DrawnGraphType.rectangle:
         _drawRectangle(canvas, graph);
         break;
+      case DrawnGraphType.parallelLine:
+        _drawParallelLine(canvas, graph);
+        break;
       default:
     }
     _drawActiveAnchorPoints(canvas, graph);
   }
 
-  /// 获取图形的锚点
+  /// 获取图形的所有锚点坐标
   List<Offset> _getAnchorPoints(DrawnGraphEntity graph) {
     return graph.values.map((value) {
-      double dx = _translateIndexToX(value.index);
-      double dy = chartPainter.getMainY(value.price);
-      return Offset(dx, dy);
+      return _getAnchorPoint(value);
     }).toList();
+  }
+
+  /// 根据graphValue计算锚点坐标
+  Offset _getAnchorPoint(DrawGraphRawValue graphValue) {
+    double dx = _translateIndexToX(graphValue.index);
+    double dy = chartPainter.getMainY(graphValue.price);
+    return Offset(dx, dy);
   }
 
   /// 绘制激活的图形的锚点
@@ -172,6 +182,58 @@ class GraphPainter extends CustomPainter {
     return -(A * x + C) / B;
   }
 
+  void _drawParallelLine(Canvas canvas, DrawnGraphEntity graph) {
+    final points = _getParallelLinePoints(graph);
+    if (points.length < 2) return;
+    final firstPoint = points[0];
+    final secondPoint = points[1];
+    // 绘制前两个点指示的直线
+    canvas.drawLine(firstPoint, secondPoint, _graphPaint);
+    if (points.length != 4) return;
+    final thirdPoint = points[2];
+    final fourthPoint = points[3];
+    // 第三个点指示的直线
+    canvas.drawLine(thirdPoint, fourthPoint, _graphPaint);
+
+    final paint = Paint()
+      ..color = Colors.red.withOpacity(0.2)
+      ..style = PaintingStyle.fill;
+    final path = Path();
+    path.moveTo(firstPoint.dx, firstPoint.dy);
+    path.lineTo(secondPoint.dx, secondPoint.dy);
+    path.lineTo(fourthPoint.dx, fourthPoint.dy);
+    path.lineTo(thirdPoint.dx, thirdPoint.dy);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  // 运行到这儿一定会有两个点
+  List<Offset> _getParallelLinePoints(DrawnGraphEntity graph) {
+    if (graph.values.length < 2) return [];
+    final firstValue = graph.values[0];
+    final secondValue = graph.values[1];
+    final firstPoint = _getAnchorPoint(firstValue);
+    final secondPoint = _getAnchorPoint(secondValue);
+    if (graph.values.length != 3) {
+      return [firstPoint, secondPoint];
+    }
+    final thirdValue = graph.values[2];
+    final diffIndex = (firstValue.index - secondValue.index) == 0
+        ? 0.1
+        : firstValue.index - secondValue.index;
+    // 价格差/index差
+    final tan = (firstValue.price - secondValue.price) / diffIndex;
+    // lastValue的index，在第一条直线上的价格
+    final priceInBaseLine =
+        firstValue.price + (thirdValue.index - firstValue.index) * tan;
+    final diffPrice = thirdValue.price - priceInBaseLine;
+    final thirdPoint = _getAnchorPoint(
+        DrawGraphRawValue(firstValue.index, firstValue.price + diffPrice));
+    final fourthPoint = _getAnchorPoint(
+        DrawGraphRawValue(secondValue.index, secondValue.price + diffPrice));
+    return [firstPoint, secondPoint, thirdPoint, fourthPoint];
+  }
+
   /// 计算点击手势的点在k线图中对应的index和价格
   DrawGraphRawValue? calculateTouchRawValue(Offset touchPoint) {
     var index = chartPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
@@ -203,6 +265,9 @@ class GraphPainter extends CustomPainter {
       return;
     }
     if (_detectRectangle(touchPoint)) {
+      return;
+    }
+    if (_detectParallelLinePlane(touchPoint)) {
       return;
     }
   }
@@ -243,9 +308,21 @@ class GraphPainter extends CustomPainter {
 
   /// 根据点击的点查找矩形，如果找到返回true
   bool _detectRectangle(Offset touchPoint) {
-    for (var graph in drawnGraphs) {
+    for (var graph in drawnGraphs.reversed) {
       if (graph.drawType == DrawnGraphType.rectangle &&
           _isPointInRectangle(touchPoint, graph)) {
+        graph.isActive = true;
+        _activeDrawnGraph = graph;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _detectParallelLinePlane(Offset touchPoint) {
+    for (var graph in drawnGraphs.reversed) {
+      if (graph.drawType == DrawnGraphType.parallelLine &&
+          _isPointInParallelLinePlane(touchPoint, graph)) {
         graph.isActive = true;
         _activeDrawnGraph = graph;
         return true;
@@ -291,6 +368,8 @@ class GraphPainter extends CustomPainter {
         return distance < _graphDetectWidth;
       case DrawnGraphType.rectangle:
         return _isPointInRectangle(touchPoint, _activeDrawnGraph!);
+      case DrawnGraphType.parallelLine:
+        return _isPointInParallelLinePlane(touchPoint, _activeDrawnGraph!);
       default:
         return false;
     }
@@ -322,6 +401,24 @@ class GraphPainter extends CustomPainter {
     } else {
       _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
       _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
+      if (_activeDrawnGraph!.drawType == DrawnGraphType.parallelLine) {
+        _adaptiveParallelLineGraphValue(anchorIndex);
+      }
+    }
+  }
+
+  /// 移动时调整锚点位置
+  void _adaptiveParallelLineGraphValue(int anchorIndex) {
+    final firstValue = _activeDrawnGraph!.values[0];
+    final secondValue = _activeDrawnGraph!.values[1];
+    final thirdValue = _activeDrawnGraph!.values[2];
+    final minIndex = min(firstValue.index, secondValue.index);
+    final maxIndex = max(firstValue.index, secondValue.index);
+    if (thirdValue.index < minIndex) {
+      thirdValue.index = minIndex;
+    }
+    if (thirdValue.index > maxIndex) {
+      thirdValue.index = maxIndex;
     }
   }
 
@@ -335,6 +432,35 @@ class GraphPainter extends CustomPainter {
         _translateIndexToX(value2.index), chartPainter.getMainY(value2.price));
     var valueRect = Rect.fromPoints(p1, p2).inflate(_graphDetectWidth);
     return valueRect.contains(touchPoint);
+  }
+
+  /// 点是否在平行线平面中
+  bool _isPointInParallelLinePlane(Offset touchPoint, DrawnGraphEntity graph) {
+    final points = _getParallelLinePoints(graph);
+    final firstPoint = points[0];
+    final secondPoint = points[1];
+    final thirdPoint = points[2];
+    final fourthPoint = points[3];
+    final path = Path();
+    path.moveTo(firstPoint.dx, firstPoint.dy);
+    path.lineTo(secondPoint.dx, secondPoint.dy);
+    path.lineTo(fourthPoint.dx, fourthPoint.dy);
+    path.lineTo(thirdPoint.dx, thirdPoint.dy);
+    path.close();
+    final pathContain = path.contains(touchPoint);
+    final detectLine1 = DistanceUtil.distanceToSegment(
+          touchPoint,
+          firstPoint,
+          secondPoint,
+        ) <
+        _graphDetectWidth;
+    final detectLine2 = DistanceUtil.distanceToSegment(
+          touchPoint,
+          thirdPoint,
+          fourthPoint,
+        ) <
+        _graphDetectWidth;
+    return pathContain || detectLine1 || detectLine2;
   }
 
   /// 点到线形的距离

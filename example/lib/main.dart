@@ -168,6 +168,9 @@ class _MyHomePageState extends State<MyHomePage> {
         button("HorizontalStraight", onPressed: () {
           _chartController.drawType = DrawnGraphType.horizontalStraightLine;
         }),
+        button("ParallelLines", onPressed: () {
+          _chartController.drawType = DrawnGraphType.parallelLine;
+        }),
         button("Rect", onPressed: () {
           _chartController.drawType = DrawnGraphType.rectangle;
         }),
