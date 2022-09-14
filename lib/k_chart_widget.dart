@@ -555,6 +555,8 @@ class _KChartWidgetState extends State<KChartWidget>
       case DrawnGraphType.straightLine:
       case DrawnGraphType.rectangle:
       case DrawnGraphType.parallelLine:
+      case DrawnGraphType.threeWave:
+      case DrawnGraphType.fiveWave:
         _drawMultiAnchorGraph(painter, touchPoint);
         break;
       case DrawnGraphType.horizontalStraightLine:

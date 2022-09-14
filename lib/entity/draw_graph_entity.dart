@@ -7,6 +7,8 @@ enum DrawnGraphType {
   horizontalStraightLine,
   parallelLine,
   rectangle,
+  threeWave,
+  fiveWave,
 }
 
 extension DrawnGraphTypeExtension on DrawnGraphType {
@@ -23,6 +25,10 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
         return 1;
       case DrawnGraphType.parallelLine:
         return 3;
+      case DrawnGraphType.threeWave:
+        return 4;
+      case DrawnGraphType.fiveWave:
+        return 6;
     }
   }
 }

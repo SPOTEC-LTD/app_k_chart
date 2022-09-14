@@ -33,6 +33,10 @@ class GraphPainter extends CustomPainter {
     ..isAntiAlias = true
     ..color = Colors.red;
 
+  final _anchorPaint = Paint()
+    ..isAntiAlias = true
+    ..color = Colors.orange;
+
   /// 判断激活哪个图形时，添加的外边距
   final _graphDetectWidth = 5.0;
 
@@ -79,6 +83,10 @@ class GraphPainter extends CustomPainter {
       case DrawnGraphType.parallelLine:
         _drawParallelLine(canvas, graph);
         break;
+      case DrawnGraphType.threeWave:
+      case DrawnGraphType.fiveWave:
+        _drawWave(canvas, graph);
+        break;
       default:
     }
     _drawActiveAnchorPoints(canvas, graph);
@@ -107,7 +115,7 @@ class GraphPainter extends CustomPainter {
       points.removeLast();
     }
     points.forEach((element) {
-      canvas.drawCircle(element, _graphDetectWidth, _graphPaint);
+      canvas.drawCircle(element, _graphDetectWidth, _anchorPaint);
     });
   }
 
@@ -157,6 +165,20 @@ class GraphPainter extends CustomPainter {
     canvas.drawRect(rect, _graphPaint);
   }
 
+  /// 绘制几浪
+  void _drawWave(Canvas canvas, DrawnGraphEntity graph) {
+    final points = _getAnchorPoints(graph);
+    if (points.length < 2) return;
+    final path = Path();
+    path.addPolygon(points, false);
+    final paint = Paint()
+      ..strokeWidth = 1.0
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..color = Colors.red;
+    canvas.drawPath(path, paint);
+  }
+
   /// 直线和画板左侧的交点
   Offset _getLeftEdgePoint(Offset p1, Offset p2) {
     var y = _getYPositionInLine(0, p1, p2);
@@ -195,9 +217,7 @@ class GraphPainter extends CustomPainter {
     // 第三个点指示的直线
     canvas.drawLine(thirdPoint, fourthPoint, _graphPaint);
 
-    final paint = Paint()
-      ..color = Colors.red.withOpacity(0.2)
-      ..style = PaintingStyle.fill;
+    final paint = Paint()..color = Colors.red.withOpacity(0.2);
     final path = Path();
     path.moveTo(firstPoint.dx, firstPoint.dy);
     path.lineTo(secondPoint.dx, secondPoint.dy);
@@ -270,6 +290,9 @@ class GraphPainter extends CustomPainter {
     if (_detectParallelLinePlane(touchPoint)) {
       return;
     }
+    if (_detectWave(touchPoint)) {
+      return;
+    }
   }
 
   /// 根据touch点查找线形，如果找到返回true
@@ -331,6 +354,17 @@ class GraphPainter extends CustomPainter {
     return false;
   }
 
+  bool _detectWave(Offset touchPoint) {
+    for (var graph in drawnGraphs.reversed) {
+      if (_isPointInWave(touchPoint, graph)) {
+        graph.isActive = true;
+        _activeDrawnGraph = graph;
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// 根据长按的点，查找离它最近的锚点的index
   int? detectAnchorPointIndex(Offset touchPoint) {
     if (_activeDrawnGraph == null) {
@@ -364,12 +398,14 @@ class GraphPainter extends CustomPainter {
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
       case DrawnGraphType.horizontalStraightLine:
-        var distance = _distanceToSingleLine(touchPoint, _activeDrawnGraph!);
-        return distance < _graphDetectWidth;
+        return _isPointInSegment(touchPoint, _activeDrawnGraph!);
       case DrawnGraphType.rectangle:
         return _isPointInRectangle(touchPoint, _activeDrawnGraph!);
       case DrawnGraphType.parallelLine:
         return _isPointInParallelLinePlane(touchPoint, _activeDrawnGraph!);
+      case DrawnGraphType.threeWave:
+      case DrawnGraphType.fiveWave:
+        return _isPointInWave(touchPoint, _activeDrawnGraph!);
       default:
         return false;
     }
@@ -422,6 +458,12 @@ class GraphPainter extends CustomPainter {
     }
   }
 
+  /// 点是否在线段中（靠近）
+  bool _isPointInSegment(Offset touchPoint, DrawnGraphEntity graph) {
+    var distance = _distanceToSingleLine(touchPoint, _activeDrawnGraph!);
+    return distance < _graphDetectWidth;
+  }
+
   /// 点是否在矩形中
   bool _isPointInRectangle(Offset touchPoint, DrawnGraphEntity graph) {
     var value1 = graph.values.first;
@@ -442,11 +484,7 @@ class GraphPainter extends CustomPainter {
     final thirdPoint = points[2];
     final fourthPoint = points[3];
     final path = Path();
-    path.moveTo(firstPoint.dx, firstPoint.dy);
-    path.lineTo(secondPoint.dx, secondPoint.dy);
-    path.lineTo(fourthPoint.dx, fourthPoint.dy);
-    path.lineTo(thirdPoint.dx, thirdPoint.dy);
-    path.close();
+    path.addPolygon(points, true);
     final pathContain = path.contains(touchPoint);
     final detectLine1 = DistanceUtil.distanceToSegment(
           touchPoint,
@@ -461,6 +499,26 @@ class GraphPainter extends CustomPainter {
         ) <
         _graphDetectWidth;
     return pathContain || detectLine1 || detectLine2;
+  }
+
+  /// 点是否在几浪的折线图中
+  bool _isPointInWave(Offset touchPoint, DrawnGraphEntity graph) {
+    if (!(graph.drawType == DrawnGraphType.threeWave ||
+        graph.drawType == DrawnGraphType.fiveWave)) {
+      return false;
+    }
+    final points = _getAnchorPoints(graph);
+    for (var index = 0; index < points.length; index++) {
+      if (index == 0) continue;
+      final prePoint = points[index - 1];
+      final curPoint = points[index];
+      final dis =
+          DistanceUtil.distanceToSegment(touchPoint, prePoint, curPoint);
+      if (dis < _graphDetectWidth) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// 点到线形的距离

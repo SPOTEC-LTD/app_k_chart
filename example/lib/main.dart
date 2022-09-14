@@ -174,6 +174,12 @@ class _MyHomePageState extends State<MyHomePage> {
         button("Rect", onPressed: () {
           _chartController.drawType = DrawnGraphType.rectangle;
         }),
+        button("ThreeWave", onPressed: () {
+          _chartController.drawType = DrawnGraphType.threeWave;
+        }),
+        button("FiveWave", onPressed: () {
+          _chartController.drawType = DrawnGraphType.fiveWave;
+        }),
         button("Clear All", onPressed: () {
           _chartController.removeAllDrawnGraphs();
         }),
