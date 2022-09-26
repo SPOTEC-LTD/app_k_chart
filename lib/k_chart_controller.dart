@@ -24,6 +24,9 @@ class KChartController extends ChangeNotifier {
   /// 绘制图形的类型
   DrawnGraphType? get drawType => _drawType;
 
+  /// 是否存在激活的图形
+  bool get existActiveGraph => _drawnGraphs.any((element) => element.isActive);
+
   /// 绘制图形的类型
   set drawType(DrawnGraphType? type) {
     _drawType = type;

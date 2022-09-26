@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -34,6 +35,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<KLineEntity>? datas;
   bool showLoading = true;
+  bool _enableDraw = true;
   MainState _mainState = MainState.MA;
   bool _volHidden = false;
   SecondaryState _secondaryState = SecondaryState.MACD;
@@ -96,8 +98,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    final listView = ListView(
       shrinkWrap: true,
+      physics: _enableDraw
+          ? NeverScrollableScrollPhysics()
+          : AlwaysScrollableScrollPhysics(),
       children: <Widget>[
         Stack(children: <Widget>[
           Container(
@@ -108,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
               chartStyle,
               chartColors,
               chartController: _chartController,
-              enableDraw: true,
+              enableDraw: _enableDraw,
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -144,12 +149,27 @@ class _MyHomePageState extends State<MyHomePage> {
           )
       ],
     );
+    return Scaffold(backgroundColor: Colors.black, body: listView);
   }
 
   Widget buildButtons() {
     return Wrap(
       alignment: WrapAlignment.spaceEvenly,
       children: <Widget>[
+        Row(
+          children: [
+            Text('Enable Draw', style: TextStyle(color: Colors.white)),
+            CupertinoSwitch(
+              value: _enableDraw,
+              onChanged: (enable) {
+                setState(() {
+                  _chartController.deactivateAllDrawnGraphs();
+                  _enableDraw = enable;
+                });
+              },
+            ),
+          ],
+        ),
         button("Segment", onPressed: () {
           _chartController.drawType = DrawnGraphType.segmentLine;
         }),

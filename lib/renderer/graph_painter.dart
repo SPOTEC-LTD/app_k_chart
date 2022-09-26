@@ -12,21 +12,21 @@ import '../utils/distance_util.dart';
 
 class GraphPainter extends CustomPainter {
   GraphPainter({
-    required this.chartPainter,
+    required this.stockPainter,
     required this.drawnGraphs,
   }) : _activeDrawnGraph =
             drawnGraphs.firstWhereOrNull((graph) => graph.isActive);
 
-  final ChartPainter chartPainter;
+  final ChartPainter stockPainter;
   final List<DrawnGraphEntity> drawnGraphs;
 
-  Rect get mMainRect => chartPainter.mMainRect;
+  Rect get mMainRect => stockPainter.mMainRect;
 
-  double get mWidth => chartPainter.mWidth;
+  double get mWidth => stockPainter.mWidth;
 
-  double get scaleX => chartPainter.scaleX;
+  double get scaleX => stockPainter.scaleX;
 
-  double get mTranslateX => chartPainter.mTranslateX;
+  double get mTranslateX => stockPainter.mTranslateX;
 
   final _graphPaint = Paint()
     ..strokeWidth = 1.0
@@ -37,8 +37,10 @@ class GraphPainter extends CustomPainter {
     ..isAntiAlias = true
     ..color = Colors.orange;
 
+  final _pointRadius = 7.5;
+
   /// 判断激活哪个图形时，添加的外边距
-  final _graphDetectWidth = 5.0;
+  final _graphDetectWidth = 10.0;
 
   /// 可编辑的用户图形
   DrawnGraphEntity? _activeDrawnGraph;
@@ -102,7 +104,7 @@ class GraphPainter extends CustomPainter {
   /// 根据graphValue计算锚点坐标
   Offset _getAnchorPoint(DrawGraphRawValue graphValue) {
     double dx = _translateIndexToX(graphValue.index);
-    double dy = chartPainter.getMainY(graphValue.price);
+    double dy = stockPainter.getMainY(graphValue.price);
     return Offset(dx, dy);
   }
 
@@ -115,7 +117,7 @@ class GraphPainter extends CustomPainter {
       points.removeLast();
     }
     points.forEach((element) {
-      canvas.drawCircle(element, _graphDetectWidth, _anchorPaint);
+      canvas.drawCircle(element, _pointRadius, _anchorPaint);
     });
   }
 
@@ -165,6 +167,26 @@ class GraphPainter extends CustomPainter {
     canvas.drawRect(rect, _graphPaint);
   }
 
+  /// 绘制平行线
+  void _drawParallelLine(Canvas canvas, DrawnGraphEntity graph) {
+    final points = _getParallelLinePoints(graph);
+    if (points.length < 2) return;
+    final firstPoint = points[0];
+    final secondPoint = points[1];
+    // 绘制前两个点指示的直线
+    canvas.drawLine(firstPoint, secondPoint, _graphPaint);
+    if (points.length != 4) return;
+    final thirdPoint = points[2];
+    final fourthPoint = points[3];
+    // 第三个点指示的直线
+    canvas.drawLine(thirdPoint, fourthPoint, _graphPaint);
+
+    final paint = Paint()..color = Colors.red.withOpacity(0.2);
+    final path = Path();
+    path.addPolygon(points, true);
+    canvas.drawPath(path, paint);
+  }
+
   /// 绘制几浪
   void _drawWave(Canvas canvas, DrawnGraphEntity graph) {
     final points = _getAnchorPoints(graph);
@@ -204,29 +226,6 @@ class GraphPainter extends CustomPainter {
     return -(A * x + C) / B;
   }
 
-  void _drawParallelLine(Canvas canvas, DrawnGraphEntity graph) {
-    final points = _getParallelLinePoints(graph);
-    if (points.length < 2) return;
-    final firstPoint = points[0];
-    final secondPoint = points[1];
-    // 绘制前两个点指示的直线
-    canvas.drawLine(firstPoint, secondPoint, _graphPaint);
-    if (points.length != 4) return;
-    final thirdPoint = points[2];
-    final fourthPoint = points[3];
-    // 第三个点指示的直线
-    canvas.drawLine(thirdPoint, fourthPoint, _graphPaint);
-
-    final paint = Paint()..color = Colors.red.withOpacity(0.2);
-    final path = Path();
-    path.moveTo(firstPoint.dx, firstPoint.dy);
-    path.lineTo(secondPoint.dx, secondPoint.dy);
-    path.lineTo(fourthPoint.dx, fourthPoint.dy);
-    path.lineTo(thirdPoint.dx, thirdPoint.dy);
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
   // 运行到这儿一定会有两个点
   List<Offset> _getParallelLinePoints(DrawnGraphEntity graph) {
     if (graph.values.length < 2) return [];
@@ -251,19 +250,20 @@ class GraphPainter extends CustomPainter {
         DrawGraphRawValue(firstValue.index, firstValue.price + diffPrice));
     final fourthPoint = _getAnchorPoint(
         DrawGraphRawValue(secondValue.index, secondValue.price + diffPrice));
-    return [firstPoint, secondPoint, thirdPoint, fourthPoint];
+    // 1-2-4-3-1 组成封闭图形
+    return [firstPoint, secondPoint, fourthPoint, thirdPoint];
   }
 
   /// 计算点击手势的点在k线图中对应的index和价格
   DrawGraphRawValue? calculateTouchRawValue(Offset touchPoint) {
-    var index = chartPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
+    var index = stockPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
     var price = _getMainPrice(touchPoint.dy);
     return DrawGraphRawValue(index, price);
   }
 
   /// 计算移动手势的点在k线图中对应的index和价格
   DrawGraphRawValue calculateMoveRawValue(Offset movePoint) {
-    var index = chartPainter.getIndex(movePoint.dx / scaleX - mTranslateX);
+    var index = stockPainter.getIndex(movePoint.dx / scaleX - mTranslateX);
     var dy = movePoint.dy;
     if (movePoint.dy < mMainRect.top) {
       dy = mMainRect.top;
@@ -425,18 +425,23 @@ class GraphPainter extends CustomPainter {
     // 计算和上一个点的偏移
     var offset = Offset(nextValue.index - currentValue.index,
         nextValue.price - currentValue.price);
-    // 没有选中锚点，或者激活的图形是一些特殊图形时，整体移动
-    if (anchorIndex == null ||
-        _activeDrawnGraph!.drawType == DrawnGraphType.horizontalSegmentLine ||
-        _activeDrawnGraph!.drawType == DrawnGraphType.verticalSegmentLine ||
-        _activeDrawnGraph!.drawType == DrawnGraphType.horizontalStraightLine) {
+    if (anchorIndex == null) {
       _activeDrawnGraph?.values.forEach((value) {
         value.index += offset.dx;
         value.price += offset.dy;
       });
     } else {
-      _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
-      _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
+      if (_activeDrawnGraph!.drawType == DrawnGraphType.horizontalSegmentLine ||
+          _activeDrawnGraph!.drawType ==
+              DrawnGraphType.horizontalStraightLine) {
+        _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
+      } else if (_activeDrawnGraph!.drawType ==
+          DrawnGraphType.verticalSegmentLine) {
+        _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
+      } else {
+        _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
+        _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
+      }
       if (_activeDrawnGraph!.drawType == DrawnGraphType.parallelLine) {
         _adaptiveParallelLineGraphValue(anchorIndex);
       }
@@ -469,9 +474,9 @@ class GraphPainter extends CustomPainter {
     var value1 = graph.values.first;
     var value2 = graph.values.last;
     var p1 = Offset(
-        _translateIndexToX(value1.index), chartPainter.getMainY(value1.price));
+        _translateIndexToX(value1.index), stockPainter.getMainY(value1.price));
     var p2 = Offset(
-        _translateIndexToX(value2.index), chartPainter.getMainY(value2.price));
+        _translateIndexToX(value2.index), stockPainter.getMainY(value2.price));
     var valueRect = Rect.fromPoints(p1, p2).inflate(_graphDetectWidth);
     return valueRect.contains(touchPoint);
   }
@@ -526,9 +531,9 @@ class GraphPainter extends CustomPainter {
     var value1 = graph.values.first;
     var value2 = graph.values.last;
     var p1 = Offset(
-        _translateIndexToX(value1.index), chartPainter.getMainY(value1.price));
+        _translateIndexToX(value1.index), stockPainter.getMainY(value1.price));
     var p2 = Offset(
-        _translateIndexToX(value2.index), chartPainter.getMainY(value2.price));
+        _translateIndexToX(value2.index), stockPainter.getMainY(value2.price));
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
     var rightEdgePoint = _getRightEdgePoint(p1, p2);
 
@@ -558,15 +563,15 @@ class GraphPainter extends CustomPainter {
   double _distanceToGraphAnchorPoint(
       Offset touchPoint, DrawGraphRawValue anchorValue) {
     var anchorPoint = Offset(_translateIndexToX(anchorValue.index),
-        chartPainter.getMainY(anchorValue.price));
+        stockPainter.getMainY(anchorValue.price));
     return DistanceUtil.distanceToPoint(touchPoint, anchorPoint);
   }
 
   double _translateIndexToX(double index) {
-    return chartPainter.translateXtoX(chartPainter.getX(index));
+    return stockPainter.translateXtoX(stockPainter.getX(index));
   }
 
   double _getMainPrice(double y) {
-    return chartPainter.mMainRenderer.getPrice(y);
+    return stockPainter.mMainRenderer.getPrice(y);
   }
 }

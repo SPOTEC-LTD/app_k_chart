@@ -119,7 +119,7 @@ class _KChartWidgetState extends State<KChartWidget>
   int? _pressAnchorIndex;
 
   /// 是否可以绘制手画的图形
-  bool get _enableDraw => widget.enableDraw && !widget.isLine;
+  bool get _enableDraw => widget.enableDraw;
 
   final _defaultChartController = KChartController();
 
@@ -152,7 +152,7 @@ class _KChartWidgetState extends State<KChartWidget>
       mScrollX = mSelectX = 0.0;
       mScaleX = 1.0;
     }
-    final _painter = ChartPainter(
+    final _stockPainter = ChartPainter(
       widget.chartStyle,
       widget.chartColors,
       lines: lines,
@@ -190,12 +190,12 @@ class _KChartWidgetState extends State<KChartWidget>
           onTapUp: (details) {
             if (!widget.isTrendLine &&
                 widget.onSecondaryTap != null &&
-                _painter.isInSecondaryRect(details.localPosition)) {
+                _stockPainter.isInSecondaryRect(details.localPosition)) {
               widget.onSecondaryTap!();
             }
 
             if (!widget.isTrendLine &&
-                _painter.isInMainRect(details.localPosition)) {
+                _stockPainter.isInMainRect(details.localPosition)) {
               isOnTap = true;
               if (mSelectX != details.localPosition.dx &&
                   widget.isTapShowInfoDialog) {
@@ -315,9 +315,11 @@ class _KChartWidgetState extends State<KChartWidget>
             children: <Widget>[
               CustomPaint(
                 size: Size(double.infinity, double.infinity),
-                painter: _painter,
+                painter: _stockPainter,
               ),
-              if (_enableDraw) _buildDrawGraphView(_painter),
+              if (_chartController.drawnGraphs.isNotEmpty ||
+                  _chartController.drawType != null)
+                _buildDrawGraphView(_stockPainter),
               if (widget.showInfoDialog) _buildInfoDialog()
             ],
           ),
@@ -507,32 +509,61 @@ class _KChartWidgetState extends State<KChartWidget>
       return [mm, '-', dd, ' ', HH, ':', nn];
   }
 
-  Widget _buildDrawGraphView(ChartPainter chartPainter) {
+  Widget _buildDrawGraphView(ChartPainter stockPainter) {
     final _graphPainter = GraphPainter(
-      chartPainter: chartPainter,
+      stockPainter: stockPainter,
       drawnGraphs: _chartController.drawnGraphs,
     );
-    return GestureDetector(
-      onTapUp: (details) {
-        if (!widget.isTrendLine &&
-            chartPainter.isInMainRect(details.localPosition)) {
-          _mainRectTappedWithEnableDraw(_graphPainter, details.localPosition);
-        }
-      },
-      onLongPressStart: (details) {
-        _beginMoveActiveGraph(_graphPainter, details.localPosition);
-      },
-      onLongPressMoveUpdate: (details) {
-        _moveActiveGraph(_graphPainter, details.localPosition);
-      },
-      onLongPressEnd: (details) {
-        _currentPressValue = null;
-      },
-      child: CustomPaint(
-        size: Size(double.infinity, double.infinity),
-        painter: _graphPainter,
+    final paint = CustomPaint(
+      size: Size(double.infinity, double.infinity),
+      painter: GraphPainter(
+        stockPainter: stockPainter,
+        drawnGraphs: _chartController.drawnGraphs,
       ),
     );
+    if (_enableDraw) {
+      // 激活的图形是否已完成绘制，已完成才可以拖动，否则会和stockPainter的手势冲突
+      return GestureDetector(
+        onTapUp: (details) {
+          if (stockPainter.isInMainRect(details.localPosition)) {
+            _mainRectTappedWithEnableDraw(_graphPainter, details.localPosition);
+          }
+        },
+        // onPanStart有等待时间，所以加一个onTapDown
+        onTapDown: _chartController.existActiveGraph
+            ? (details) {
+                if (stockPainter.isInMainRect(details.localPosition)) {
+                  _beginMoveActiveGraph(_graphPainter, details.localPosition);
+                }
+              }
+            : null,
+        onPanStart: _chartController.existActiveGraph
+            ? (details) {
+                _beginMoveActiveGraph(_graphPainter, details.localPosition);
+              }
+            : null,
+        onPanUpdate: _chartController.existActiveGraph
+            ? (details) {
+                _moveActiveGraph(_graphPainter, details.localPosition);
+              }
+            : null,
+        onPanEnd: _chartController.existActiveGraph
+            ? (details) {
+                _activeGraphMoveEnd();
+              }
+            : null,
+        onLongPressStart: (details) {
+          _beginMoveActiveGraph(_graphPainter, details.localPosition);
+        },
+        onLongPressMoveUpdate: (details) {
+          _moveActiveGraph(_graphPainter, details.localPosition);
+        },
+        onLongPressEnd: (details) => _activeGraphMoveEnd(),
+        child: paint,
+      );
+    } else {
+      return paint;
+    }
   }
 
   /// 手绘模式下，主图范围内被点击
@@ -655,10 +686,9 @@ class _KChartWidgetState extends State<KChartWidget>
     }
   }
 
-  /// 长按开始移动正在编辑的图形
+  /// 滑动、长按，开始移动正在编辑的图形
   void _beginMoveActiveGraph(GraphPainter painter, Offset position) {
     if (!painter.canBeginMoveActiveGraph(position)) {
-      _chartController.deactivateAllDrawnGraphs();
       return;
     }
     _currentPressValue = painter.calculateTouchRawValue(position);
@@ -666,7 +696,7 @@ class _KChartWidgetState extends State<KChartWidget>
     _pressAnchorIndex = painter.detectAnchorPointIndex(position);
   }
 
-  /// 移动正在编辑的图形
+  /// 滑动、长按手势移动正在编辑的图形
   void _moveActiveGraph(GraphPainter painter, Offset position) {
     if (_currentPressValue == null || !painter.haveActiveDrawnGraph()) {
       return;
@@ -675,5 +705,11 @@ class _KChartWidgetState extends State<KChartWidget>
     painter.moveActiveGraph(_currentPressValue!, nextValue, _pressAnchorIndex);
     _currentPressValue = nextValue;
     notifyChanged();
+  }
+
+  /// 编辑中的图形移动完成
+  void _activeGraphMoveEnd() {
+    _currentPressValue = null;
+    _pressAnchorIndex = null;
   }
 }
