@@ -40,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _volHidden = false;
   SecondaryState _secondaryState = SecondaryState.MACD;
   bool isLine = true;
-  bool isChinese = true;
   bool _hideGrid = false;
   bool _showNowPrice = true;
   List<DepthEntity>? _bids, _asks;
@@ -125,8 +124,6 @@ class _MyHomePageState extends State<MyHomePage> {
               fixedLength: 2,
               translations: kChartTranslations,
               showNowPrice: _showNowPrice,
-              //`isChinese` is Deprecated, Use `translations` instead.
-              isChinese: isChinese,
               hideGrid: _hideGrid,
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
@@ -226,7 +223,6 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () => _secondaryState = SecondaryState.NONE),
         button(_volHidden ? "Show Vol" : "Hide Vol",
             onPressed: () => _volHidden = !_volHidden),
-        button("Change Language", onPressed: () => isChinese = !isChinese),
         button(_hideGrid ? "Show Grid" : "Hide Grid",
             onPressed: () => _hideGrid = !_hideGrid),
         button(_showNowPrice ? "Hide Now Price" : "Show Now Price",

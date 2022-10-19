@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/chart_translations.dart';
-import 'package:k_chart/extension/map_ext.dart';
 import 'package:k_chart/flutter_k_chart.dart';
 import 'package:k_chart/renderer/graph_painter.dart';
 
@@ -23,12 +22,10 @@ class KChartWidget extends StatefulWidget {
   final bool isLine;
   final bool isTapShowInfoDialog; //是否开启单击显示详情数据
   final bool hideGrid;
-  @Deprecated('Use `translations` instead.')
-  final bool isChinese;
   final bool showNowPrice;
   final bool showInfoDialog;
   final bool materialInfoDialog; // Material风格的信息弹窗
-  final Map<String, ChartTranslations> translations;
+  final ChartTranslations translations;
 
   //当屏幕滚动到尽头会调用，真为拉到屏幕右侧尽头，假为拉到屏幕左侧尽头
   final Function(bool)? onLoadMore;
@@ -64,7 +61,6 @@ class KChartWidget extends StatefulWidget {
     this.isLine = false,
     this.isTapShowInfoDialog = false,
     this.hideGrid = false,
-    @Deprecated('Use `translations` instead.') this.isChinese = false,
     this.showNowPrice = true,
     this.showInfoDialog = true,
     this.materialInfoDialog = true,
@@ -440,13 +436,9 @@ class _KChartWidgetState extends State<KChartWidget>
               itemCount: infos.length,
               shrinkWrap: true,
               itemBuilder: (context, index) {
-                final translations = widget.isChinese
-                    ? kChartTranslations['zh_CN']!
-                    : widget.translations.of(context);
-
                 return _buildItem(
                   infos[index],
-                  translations.byIndex(index),
+                  widget.translations.byIndex(index),
                 );
               },
             ),

@@ -43,15 +43,13 @@ class ChartTranslations {
   }
 }
 
-const kChartTranslations = {
-  'zh_CN': ChartTranslations(
-    date: '时间',
-    open: '开',
-    high: '高',
-    low: '低',
-    close: '收',
-    changeAmount: '涨跌额',
-    change: '涨跌幅',
-    amount: '成交额',
-  ),
-};
+const kChartTranslations = ChartTranslations(
+  date: '时间',
+  open: '开',
+  high: '高',
+  low: '低',
+  close: '收',
+  changeAmount: '涨跌额',
+  change: '涨跌幅',
+  amount: '成交额',
+);
