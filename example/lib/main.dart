@@ -128,6 +128,13 @@ class _MyHomePageState extends State<MyHomePage> {
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
               maDayList: [1, 100, 1000],
+              drawFinished: () => print('drawFinished'),
+              graphDetected: (hashcode) {
+                final active = _chartController.drawnGraphs.firstWhere((graph) {
+                  return graph.hashCode == hashcode;
+                });
+                print(active.hashCode);
+              },
             ),
           ),
           if (showLoading)

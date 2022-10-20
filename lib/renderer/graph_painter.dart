@@ -28,10 +28,17 @@ class GraphPainter extends CustomPainter {
 
   double get mTranslateX => stockPainter.mTranslateX;
 
-  final _graphPaint = Paint()
+  DrawnGraphEntity? get activeDrawnGraph => _activeDrawnGraph;
+
+  final _strokePaint = Paint()
     ..strokeWidth = 1.0
     ..isAntiAlias = true
+    ..style = PaintingStyle.stroke
     ..color = Colors.red;
+
+  final _fillPaint = Paint()
+    ..isAntiAlias = true
+    ..color = Colors.red.withOpacity(0.2);
 
   final _anchorPaint = Paint()
     ..isAntiAlias = true
@@ -125,7 +132,7 @@ class GraphPainter extends CustomPainter {
   void _drawSegmentLine(Canvas canvas, DrawnGraphEntity graph) {
     if (graph.values.length != 2) return;
     final points = _getAnchorPoints(graph);
-    canvas.drawLine(points.first, points.last, _graphPaint);
+    canvas.drawLine(points.first, points.last, _strokePaint);
   }
 
   /// 绘制射线
@@ -145,7 +152,7 @@ class GraphPainter extends CustomPainter {
       // 端点在画布左侧
       endPoint = leftEdgePoint;
     }
-    canvas.drawLine(p1, endPoint, _graphPaint);
+    canvas.drawLine(p1, endPoint, _strokePaint);
   }
 
   /// 绘制直线
@@ -156,7 +163,7 @@ class GraphPainter extends CustomPainter {
     var p2 = points.last;
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
     var rightEdgePoint = _getRightEdgePoint(p1, p2);
-    canvas.drawLine(leftEdgePoint, rightEdgePoint, _graphPaint);
+    canvas.drawLine(leftEdgePoint, rightEdgePoint, _strokePaint);
   }
 
   /// 绘制矩形
@@ -164,7 +171,8 @@ class GraphPainter extends CustomPainter {
     if (graph.values.length != 2) return;
     final points = _getAnchorPoints(graph);
     var rect = Rect.fromPoints(points.first, points.last);
-    canvas.drawRect(rect, _graphPaint);
+    canvas.drawRect(rect, _strokePaint);
+    canvas.drawRect(rect, _fillPaint);
   }
 
   /// 绘制平行线
@@ -174,17 +182,16 @@ class GraphPainter extends CustomPainter {
     final firstPoint = points[0];
     final secondPoint = points[1];
     // 绘制前两个点指示的直线
-    canvas.drawLine(firstPoint, secondPoint, _graphPaint);
+    canvas.drawLine(firstPoint, secondPoint, _strokePaint);
     if (points.length != 4) return;
     final thirdPoint = points[2];
     final fourthPoint = points[3];
     // 第三个点指示的直线
-    canvas.drawLine(thirdPoint, fourthPoint, _graphPaint);
+    canvas.drawLine(thirdPoint, fourthPoint, _strokePaint);
 
-    final paint = Paint()..color = Colors.red.withOpacity(0.2);
     final path = Path();
     path.addPolygon(points, true);
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, _fillPaint);
   }
 
   /// 绘制几浪
@@ -193,12 +200,7 @@ class GraphPainter extends CustomPainter {
     if (points.length < 2) return;
     final path = Path();
     path.addPolygon(points, false);
-    final paint = Paint()
-      ..strokeWidth = 1.0
-      ..isAntiAlias = true
-      ..style = PaintingStyle.stroke
-      ..color = Colors.red;
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, _strokePaint);
   }
 
   /// 直线和画板左侧的交点
@@ -281,16 +283,17 @@ class GraphPainter extends CustomPainter {
       return;
     }
     drawnGraphs.forEach((graph) => graph.isActive = false);
+    _activeDrawnGraph = null;
     if (_detectSingleLine(touchPoint)) {
+      return;
+    }
+    if (_detectWave(touchPoint)) {
       return;
     }
     if (_detectRectangle(touchPoint)) {
       return;
     }
     if (_detectParallelLinePlane(touchPoint)) {
-      return;
-    }
-    if (_detectWave(touchPoint)) {
       return;
     }
   }
@@ -313,7 +316,7 @@ class GraphPainter extends CustomPainter {
 
     var minIndex = 0;
     var minDis = double.infinity;
-    for (var i = 0; i < singleLineGraphs.length; i++) {
+    for (var i = singleLineGraphs.length - 1; i >= 0; i--) {
       var distance = _distanceToSingleLine(touchPoint, singleLineGraphs[i]);
       if (distance < minDis) {
         minIndex = i;
@@ -388,7 +391,10 @@ class GraphPainter extends CustomPainter {
 
   /// 根据长按开始点计算编辑中图形是否可以移动
   bool canBeginMoveActiveGraph(Offset touchPoint) {
-    if (_activeDrawnGraph == null) {
+    // 没有激活的图形，或者激活的图形没有绘制完成
+    if (_activeDrawnGraph == null ||
+        _activeDrawnGraph!.drawType.anchorCount !=
+            _activeDrawnGraph!.values.length) {
       return false;
     }
     switch (_activeDrawnGraph!.drawType) {
