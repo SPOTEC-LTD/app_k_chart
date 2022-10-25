@@ -46,9 +46,6 @@ class KChartWidget extends StatefulWidget {
   /// 是否启用绘图模式
   final bool enableDraw;
 
-  /// 是否显示手绘的图形
-  final bool showDrawnGraphs;
-
   /// 当前图形绘制完成的回调
   final VoidCallback? drawFinished;
 
@@ -84,7 +81,6 @@ class KChartWidget extends StatefulWidget {
     this.verticalTextAlignment = VerticalTextAlignment.left,
     this.chartController,
     this.enableDraw = false,
-    this.showDrawnGraphs = true,
     this.outMainTap,
     this.drawFinished,
     this.graphDetected,
@@ -325,7 +321,7 @@ class _KChartWidgetState extends State<KChartWidget>
                 size: Size(double.infinity, double.infinity),
                 painter: _stockPainter,
               ),
-              if (widget.showDrawnGraphs &&
+              if (_chartController.showDrawnGraphs &&
                   (_chartController.drawnGraphs.isNotEmpty ||
                       _chartController.drawType != null))
                 _buildDrawGraphView(_stockPainter),

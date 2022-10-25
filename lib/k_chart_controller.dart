@@ -34,6 +34,17 @@ class KChartController extends ChangeNotifier {
 
   DrawnGraphType? _drawType;
 
+  /// 是否显示绘制的图形
+  bool get showDrawnGraphs => _showDrawnGraphs;
+
+  /// 是否显示绘制的图形
+  set showDrawnGraphs(bool show) {
+    _showDrawnGraphs = show;
+    notifyListeners();
+  }
+
+  bool _showDrawnGraphs = true;
+
   /// 是否存在激活的图形
   bool get existActiveGraph => _drawnGraphs.any((element) => element.isActive);
 
