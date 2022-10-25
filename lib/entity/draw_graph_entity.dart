@@ -48,6 +48,15 @@ class DrawnGraphEntity {
   List<DrawGraphRawValue> values;
   bool isActive;
 
+  /// 当前图形是否绘制完成
+  bool get drawFinished {
+    if (drawType == DrawnGraphType.horizontalStraightLine) {
+      return values.length == 2;
+    } else {
+      return drawType.anchorCount == values.length;
+    }
+  }
+
   DrawnGraphEntity({
     required this.drawType,
     required this.values,

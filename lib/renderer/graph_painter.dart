@@ -392,9 +392,7 @@ class GraphPainter extends CustomPainter {
   /// 根据长按开始点计算编辑中图形是否可以移动
   bool canBeginMoveActiveGraph(Offset touchPoint) {
     // 没有激活的图形，或者激活的图形没有绘制完成
-    if (_activeDrawnGraph == null ||
-        _activeDrawnGraph!.drawType.anchorCount !=
-            _activeDrawnGraph!.values.length) {
+    if (_activeDrawnGraph?.drawFinished != true) {
       return false;
     }
     switch (_activeDrawnGraph!.drawType) {
@@ -441,9 +439,15 @@ class GraphPainter extends CustomPainter {
           _activeDrawnGraph!.drawType ==
               DrawnGraphType.horizontalStraightLine) {
         _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
+        _activeDrawnGraph!.values.forEach((graph) {
+          graph.price += offset.dy;
+        });
       } else if (_activeDrawnGraph!.drawType ==
           DrawnGraphType.verticalSegmentLine) {
         _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
+        _activeDrawnGraph!.values.forEach((graph) {
+          graph.index += offset.dx;
+        });
       } else {
         _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
         _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
