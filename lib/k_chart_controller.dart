@@ -44,7 +44,7 @@ class KChartController extends ChangeNotifier {
 
   /// 将所有绘制的图形设置为未激活状态，如果图形还未绘制完，则删除该图形
   void deactivateAllDrawnGraphs() {
-    if (drawnGraphs.isNotEmpty && drawnGraphs.last.values.length < 2) {
+    if (drawnGraphs.isNotEmpty && !drawnGraphs.last.drawFinished) {
       drawnGraphs.removeLast();
     }
     drawnGraphs.forEach((graph) => graph.isActive = false);
