@@ -36,6 +36,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<KLineEntity>? datas;
   bool showLoading = true;
   bool _enableDraw = true;
+  bool _showGraphs = true;
   MainState _mainState = MainState.MA;
   bool _volHidden = false;
   SecondaryState _secondaryState = SecondaryState.MACD;
@@ -113,6 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
               chartColors,
               chartController: _chartController,
               enableDraw: _enableDraw,
+              showDrawnGraphs: _showGraphs,
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -169,6 +171,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 setState(() {
                   _chartController.deactivateAllDrawnGraphs();
                   _enableDraw = enable;
+                });
+              },
+            ),
+            Text('Show Graphs', style: TextStyle(color: Colors.white)),
+            CupertinoSwitch(
+              value: _showGraphs,
+              onChanged: (enable) {
+                setState(() {
+                  _showGraphs = enable;
                 });
               },
             ),
