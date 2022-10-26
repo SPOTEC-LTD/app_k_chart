@@ -109,6 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
             width: double.infinity,
             child: KChartWidget(
               datas,
+              24 * 60 * 60 * 1000,
               chartStyle,
               chartColors,
               chartController: _chartController,

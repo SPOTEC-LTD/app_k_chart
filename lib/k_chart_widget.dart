@@ -46,6 +46,9 @@ class KChartWidget extends StatefulWidget {
   /// 是否启用绘图模式
   final bool enableDraw;
 
+  /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
+  final int timeInterval;
+
   /// 当前图形绘制完成的回调
   final VoidCallback? drawFinished;
 
@@ -57,6 +60,7 @@ class KChartWidget extends StatefulWidget {
 
   KChartWidget(
     this.datas,
+    this.timeInterval,
     this.chartStyle,
     this.chartColors, {
     required this.isTrendLine,
@@ -321,7 +325,8 @@ class _KChartWidgetState extends State<KChartWidget>
                 size: Size(double.infinity, double.infinity),
                 painter: _stockPainter,
               ),
-              if (_chartController.showDrawnGraphs &&
+              if ((widget.datas != null && widget.datas!.isNotEmpty) &&
+                  _chartController.showDrawnGraphs &&
                   (_chartController.drawnGraphs.isNotEmpty ||
                       _chartController.drawType != null))
                 _buildDrawGraphView(_stockPainter),
@@ -514,12 +519,14 @@ class _KChartWidgetState extends State<KChartWidget>
     final _graphPainter = GraphPainter(
       stockPainter: stockPainter,
       drawnGraphs: _chartController.drawnGraphs,
+      timeInterval: widget.timeInterval,
     );
     final paint = CustomPaint(
       size: Size(double.infinity, double.infinity),
       painter: GraphPainter(
         stockPainter: stockPainter,
         drawnGraphs: _chartController.drawnGraphs,
+        timeInterval: widget.timeInterval,
       ),
     );
     if (_enableDraw) {
@@ -550,7 +557,7 @@ class _KChartWidgetState extends State<KChartWidget>
             : null,
         onPanEnd: _chartController.existActiveGraph
             ? (details) {
-                _activeGraphMoveEnd();
+                _activeGraphMoveEnd(_graphPainter);
               }
             : null,
         onLongPressStart: (details) {
@@ -559,7 +566,7 @@ class _KChartWidgetState extends State<KChartWidget>
         onLongPressMoveUpdate: (details) {
           _moveActiveGraph(_graphPainter, details.localPosition);
         },
-        onLongPressEnd: (details) => _activeGraphMoveEnd(),
+        onLongPressEnd: (details) => _activeGraphMoveEnd(_graphPainter),
         child: paint,
       );
     } else {
@@ -678,8 +685,10 @@ class _KChartWidgetState extends State<KChartWidget>
       widget.outMainTap?.call();
     } else {
       // 第二个点不会被绘制
-      final graphValue2 =
-          DrawGraphRawValue(graphValue.index + 5, graphValue.price);
+      final graphValue2 = DrawGraphRawValue(
+        index: graphValue.index + 5,
+        price: graphValue.price,
+      );
       final drawingGraph = DrawnGraphEntity(
         drawType: _chartController.drawType!,
         values: [graphValue, graphValue2],
@@ -714,7 +723,11 @@ class _KChartWidgetState extends State<KChartWidget>
   }
 
   /// 编辑中的图形移动完成
-  void _activeGraphMoveEnd() {
+  void _activeGraphMoveEnd(GraphPainter painter) {
+    painter.activeDrawnGraph?.values.forEach((value) {
+      final indexTime = painter.calculateIndexTime(value.index);
+      value.time = indexTime;
+    });
     _currentPressValue = null;
     _pressAnchorIndex = null;
   }

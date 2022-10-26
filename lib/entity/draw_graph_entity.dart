@@ -34,13 +34,24 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
 }
 
 class DrawGraphRawValue {
-  double index;
   double price;
+  double index;
+  int? time;
 
-  DrawGraphRawValue(
-    this.index,
-    this.price,
-  );
+  DrawGraphRawValue({
+    required this.price,
+    required this.index,
+    this.time,
+  });
+
+  DrawGraphRawValue.fromMap(Map<String, dynamic> map)
+      : price = map['price'],
+        index = map['index'],
+        time = map['time'];
+
+  Map<String, Object?> toMap() {
+    return {'price': price, 'index': index, 'time': time};
+  }
 }
 
 class DrawnGraphEntity {

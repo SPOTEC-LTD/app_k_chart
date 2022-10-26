@@ -14,11 +14,15 @@ class GraphPainter extends CustomPainter {
   GraphPainter({
     required this.stockPainter,
     required this.drawnGraphs,
+    required this.timeInterval,
   }) : _activeDrawnGraph =
             drawnGraphs.firstWhereOrNull((graph) => graph.isActive);
 
   final ChartPainter stockPainter;
   final List<DrawnGraphEntity> drawnGraphs;
+
+  /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
+  final int timeInterval;
 
   Rect get mMainRect => stockPainter.mMainRect;
 
@@ -248,10 +252,14 @@ class GraphPainter extends CustomPainter {
     final priceInBaseLine =
         firstValue.price + (thirdValue.index - firstValue.index) * tan;
     final diffPrice = thirdValue.price - priceInBaseLine;
-    final thirdPoint = _getAnchorPoint(
-        DrawGraphRawValue(firstValue.index, firstValue.price + diffPrice));
-    final fourthPoint = _getAnchorPoint(
-        DrawGraphRawValue(secondValue.index, secondValue.price + diffPrice));
+    final thirdPoint = _getAnchorPoint(DrawGraphRawValue(
+      index: firstValue.index,
+      price: firstValue.price + diffPrice,
+    ));
+    final fourthPoint = _getAnchorPoint(DrawGraphRawValue(
+      index: secondValue.index,
+      price: secondValue.price + diffPrice,
+    ));
     // 1-2-4-3-1 组成封闭图形
     return [firstPoint, secondPoint, fourthPoint, thirdPoint];
   }
@@ -260,7 +268,25 @@ class GraphPainter extends CustomPainter {
   DrawGraphRawValue? calculateTouchRawValue(Offset touchPoint) {
     var index = stockPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
     var price = _getMainPrice(touchPoint.dy);
-    return DrawGraphRawValue(index, price);
+    final pointTime = calculateIndexTime(index);
+    return DrawGraphRawValue(index: index, price: price, time: pointTime);
+  }
+
+  int? calculateIndexTime(double index) {
+    final intIndex = index.toInt();
+    final dataCount = stockPainter.datas!.length - 1;
+    int baseIndex = intIndex;
+    // 如果点击的位置超出k线区域，以最后一根k线的时间作为基准
+    if (intIndex >= dataCount) {
+      baseIndex = dataCount;
+    }
+    // 点击位置对应x轴的时间戳
+    int? pointTime;
+    final baseTime = stockPainter.datas![baseIndex].time;
+    if (baseTime != null) {
+      pointTime = ((index - baseIndex) * timeInterval + baseTime).toInt();
+    }
+    return pointTime;
   }
 
   /// 计算移动手势的点在k线图中对应的index和价格
@@ -274,7 +300,7 @@ class GraphPainter extends CustomPainter {
       dy = mMainRect.bottom;
     }
     var price = _getMainPrice(dy);
-    return DrawGraphRawValue(index, price);
+    return DrawGraphRawValue(index: index, price: price);
   }
 
   /// 根据touch点，查找离它最近的图形
