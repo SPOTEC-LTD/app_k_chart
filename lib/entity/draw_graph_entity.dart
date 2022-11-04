@@ -1,10 +1,10 @@
 enum DrawnGraphType {
   segmentLine,
-  horizontalSegmentLine,
-  verticalSegmentLine,
+  hSegmentLine,
+  vSegmentLine,
   rayLine,
   straightLine,
-  horizontalStraightLine,
+  hStraightLine,
   parallelLine,
   rectangle,
   threeWave,
@@ -15,13 +15,13 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
   int get anchorCount {
     switch (this) {
       case DrawnGraphType.segmentLine:
-      case DrawnGraphType.horizontalSegmentLine:
-      case DrawnGraphType.verticalSegmentLine:
+      case DrawnGraphType.hSegmentLine:
+      case DrawnGraphType.vSegmentLine:
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
       case DrawnGraphType.rectangle:
         return 2;
-      case DrawnGraphType.horizontalStraightLine:
+      case DrawnGraphType.hStraightLine:
         return 1;
       case DrawnGraphType.parallelLine:
         return 3;
@@ -31,16 +31,21 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
         return 6;
     }
   }
+
+  String toJson() => name;
+
+  static DrawnGraphType fromJson(String json) =>
+      DrawnGraphType.values.byName(json);
 }
 
 class DrawGraphRawValue {
   double price;
-  double index;
+  double? index;
   int? time;
 
   DrawGraphRawValue({
     required this.price,
-    required this.index,
+    this.index,
     this.time,
   });
 
@@ -61,7 +66,7 @@ class DrawnGraphEntity {
 
   /// 当前图形是否绘制完成
   bool get drawFinished {
-    if (drawType == DrawnGraphType.horizontalStraightLine) {
+    if (drawType == DrawnGraphType.hStraightLine) {
       return values.length == 2;
     } else {
       return drawType.anchorCount == values.length;
@@ -73,4 +78,19 @@ class DrawnGraphEntity {
     required this.values,
     this.isActive = false,
   });
+
+  DrawnGraphEntity.fromMap(Map<String, dynamic> map)
+      : drawType = DrawnGraphTypeExtension.fromJson(map['drawType']),
+        values = (map['values'] as List)
+            .map((e) => DrawGraphRawValue.fromMap(e))
+            .toList(),
+        isActive = false;
+
+  Map<String, Object?> toMap() {
+    return {
+      'drawType': drawType.toJson(),
+      'values': values.map((e) => e.toMap()).toList(),
+      'isActive': false,
+    };
+  }
 }

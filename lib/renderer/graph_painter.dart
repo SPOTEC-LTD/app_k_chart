@@ -79,15 +79,15 @@ class GraphPainter extends CustomPainter {
     }
     switch (graph.drawType) {
       case DrawnGraphType.segmentLine:
-      case DrawnGraphType.horizontalSegmentLine:
-      case DrawnGraphType.verticalSegmentLine:
+      case DrawnGraphType.hSegmentLine:
+      case DrawnGraphType.vSegmentLine:
         _drawSegmentLine(canvas, graph);
         break;
       case DrawnGraphType.rayLine:
         _drawRayLine(canvas, graph);
         break;
       case DrawnGraphType.straightLine:
-      case DrawnGraphType.horizontalStraightLine:
+      case DrawnGraphType.hStraightLine:
         _drawStraightLine(canvas, graph);
         break;
       case DrawnGraphType.rectangle:
@@ -114,7 +114,7 @@ class GraphPainter extends CustomPainter {
 
   /// 根据graphValue计算锚点坐标
   Offset _getAnchorPoint(DrawGraphRawValue graphValue) {
-    double dx = _translateIndexToX(graphValue.index);
+    double dx = _translateIndexToX(graphValue.index!);
     double dy = stockPainter.getMainY(graphValue.price);
     return Offset(dx, dy);
   }
@@ -124,7 +124,7 @@ class GraphPainter extends CustomPainter {
     if (!graph.isActive) return;
     final points = _getAnchorPoints(graph);
     // 水平直线只显示一个锚点
-    if (graph.drawType == DrawnGraphType.horizontalStraightLine) {
+    if (graph.drawType == DrawnGraphType.hStraightLine) {
       points.removeLast();
     }
     points.forEach((element) {
@@ -132,16 +132,25 @@ class GraphPainter extends CustomPainter {
     });
   }
 
+  /// 图形是否可以绘制
+  bool _isGraphValid(DrawnGraphEntity graph, int minCount) {
+    if (graph.values.length < minCount ||
+        graph.values.any((e) => e.index == null)) {
+      return false;
+    }
+    return true;
+  }
+
   /// 绘制线段
   void _drawSegmentLine(Canvas canvas, DrawnGraphEntity graph) {
-    if (graph.values.length != 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
     canvas.drawLine(points.first, points.last, _strokePaint);
   }
 
   /// 绘制射线
   void _drawRayLine(Canvas canvas, DrawnGraphEntity graph) {
-    if (graph.values.length != 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
     var p1 = points.first;
     var p2 = points.last;
@@ -161,7 +170,7 @@ class GraphPainter extends CustomPainter {
 
   /// 绘制直线
   void _drawStraightLine(Canvas canvas, DrawnGraphEntity graph) {
-    if (graph.values.length != 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
     var p1 = points.first;
     var p2 = points.last;
@@ -172,7 +181,7 @@ class GraphPainter extends CustomPainter {
 
   /// 绘制矩形
   void _drawRectangle(Canvas canvas, DrawnGraphEntity graph) {
-    if (graph.values.length != 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
     var rect = Rect.fromPoints(points.first, points.last);
     canvas.drawRect(rect, _strokePaint);
@@ -182,7 +191,7 @@ class GraphPainter extends CustomPainter {
   /// 绘制平行线
   void _drawParallelLine(Canvas canvas, DrawnGraphEntity graph) {
     final points = _getParallelLinePoints(graph);
-    if (points.length < 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final firstPoint = points[0];
     final secondPoint = points[1];
     // 绘制前两个点指示的直线
@@ -201,7 +210,7 @@ class GraphPainter extends CustomPainter {
   /// 绘制几浪
   void _drawWave(Canvas canvas, DrawnGraphEntity graph) {
     final points = _getAnchorPoints(graph);
-    if (points.length < 2) return;
+    if (!_isGraphValid(graph, 2)) return;
     final path = Path();
     path.addPolygon(points, false);
     canvas.drawPath(path, _strokePaint);
@@ -234,7 +243,7 @@ class GraphPainter extends CustomPainter {
 
   // 运行到这儿一定会有两个点
   List<Offset> _getParallelLinePoints(DrawnGraphEntity graph) {
-    if (graph.values.length < 2) return [];
+    if (!_isGraphValid(graph, 2)) return [];
     final firstValue = graph.values[0];
     final secondValue = graph.values[1];
     final firstPoint = _getAnchorPoint(firstValue);
@@ -243,14 +252,14 @@ class GraphPainter extends CustomPainter {
       return [firstPoint, secondPoint];
     }
     final thirdValue = graph.values[2];
-    final diffIndex = (firstValue.index - secondValue.index) == 0
+    final diffIndex = (firstValue.index! - secondValue.index!) == 0
         ? 0.1
-        : firstValue.index - secondValue.index;
+        : firstValue.index! - secondValue.index!;
     // 价格差/index差
     final tan = (firstValue.price - secondValue.price) / diffIndex;
     // lastValue的index，在第一条直线上的价格
     final priceInBaseLine =
-        firstValue.price + (thirdValue.index - firstValue.index) * tan;
+        firstValue.price + (thirdValue.index! - firstValue.index!) * tan;
     final diffPrice = thirdValue.price - priceInBaseLine;
     final thirdPoint = _getAnchorPoint(DrawGraphRawValue(
       index: firstValue.index,
@@ -273,18 +282,31 @@ class GraphPainter extends CustomPainter {
   }
 
   int? calculateIndexTime(double index) {
-    final intIndex = index.toInt();
+    final intIndex = index.floor();
     final dataCount = stockPainter.datas!.length - 1;
-    int baseIndex = intIndex;
+    int baseIndex;
+    int interval;
     // 如果点击的位置超出k线区域，以最后一根k线的时间作为基准
     if (intIndex >= dataCount) {
       baseIndex = dataCount;
+      interval = timeInterval;
+    } else {
+      baseIndex = intIndex;
+      final nextIndex = baseIndex + 1;
+      final baseTime = stockPainter.datas![baseIndex].time;
+      final nextTime = stockPainter.datas![nextIndex].time;
+      if (baseTime == null || nextTime == null) {
+        interval = timeInterval;
+      } else {
+        interval = nextTime - baseTime;
+      }
     }
+
     // 点击位置对应x轴的时间戳
     int? pointTime;
     final baseTime = stockPainter.datas![baseIndex].time;
     if (baseTime != null) {
-      pointTime = ((index - baseIndex) * timeInterval + baseTime).toInt();
+      pointTime = ((index - baseIndex) * interval + baseTime).toInt();
     }
     return pointTime;
   }
@@ -329,11 +351,11 @@ class GraphPainter extends CustomPainter {
     var singleLineGraphs = drawnGraphs.where((graph) {
       switch (graph.drawType) {
         case DrawnGraphType.segmentLine:
-        case DrawnGraphType.horizontalSegmentLine:
-        case DrawnGraphType.verticalSegmentLine:
+        case DrawnGraphType.hSegmentLine:
+        case DrawnGraphType.vSegmentLine:
         case DrawnGraphType.rayLine:
         case DrawnGraphType.straightLine:
-        case DrawnGraphType.horizontalStraightLine:
+        case DrawnGraphType.hStraightLine:
           return true;
         default:
           return false;
@@ -423,11 +445,11 @@ class GraphPainter extends CustomPainter {
     }
     switch (_activeDrawnGraph!.drawType) {
       case DrawnGraphType.segmentLine:
-      case DrawnGraphType.horizontalSegmentLine:
-      case DrawnGraphType.verticalSegmentLine:
+      case DrawnGraphType.hSegmentLine:
+      case DrawnGraphType.vSegmentLine:
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
-      case DrawnGraphType.horizontalStraightLine:
+      case DrawnGraphType.hStraightLine:
         return _isPointInSegment(touchPoint, _activeDrawnGraph!);
       case DrawnGraphType.rectangle:
         return _isPointInRectangle(touchPoint, _activeDrawnGraph!);
@@ -453,29 +475,29 @@ class GraphPainter extends CustomPainter {
     int? anchorIndex,
   ) {
     // 计算和上一个点的偏移
-    var offset = Offset(nextValue.index - currentValue.index,
+    var offset = Offset(nextValue.index! - currentValue.index!,
         nextValue.price - currentValue.price);
     if (anchorIndex == null) {
       _activeDrawnGraph?.values.forEach((value) {
-        value.index += offset.dx;
+        value.index = value.index! + offset.dx;
         value.price += offset.dy;
       });
     } else {
-      if (_activeDrawnGraph!.drawType == DrawnGraphType.horizontalSegmentLine ||
-          _activeDrawnGraph!.drawType ==
-              DrawnGraphType.horizontalStraightLine) {
-        _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
+      if (_activeDrawnGraph!.drawType == DrawnGraphType.hSegmentLine ||
+          _activeDrawnGraph!.drawType == DrawnGraphType.hStraightLine) {
+        _activeDrawnGraph!.values[anchorIndex].index =
+            _activeDrawnGraph!.values[anchorIndex].index! + offset.dx;
         _activeDrawnGraph!.values.forEach((graph) {
           graph.price += offset.dy;
         });
-      } else if (_activeDrawnGraph!.drawType ==
-          DrawnGraphType.verticalSegmentLine) {
+      } else if (_activeDrawnGraph!.drawType == DrawnGraphType.vSegmentLine) {
         _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
         _activeDrawnGraph!.values.forEach((graph) {
-          graph.index += offset.dx;
+          graph.index = graph.index! + offset.dx;
         });
       } else {
-        _activeDrawnGraph!.values[anchorIndex].index += offset.dx;
+        _activeDrawnGraph!.values[anchorIndex].index =
+            _activeDrawnGraph!.values[anchorIndex].index! + offset.dx;
         _activeDrawnGraph!.values[anchorIndex].price += offset.dy;
       }
       if (_activeDrawnGraph!.drawType == DrawnGraphType.parallelLine) {
@@ -489,12 +511,12 @@ class GraphPainter extends CustomPainter {
     final firstValue = _activeDrawnGraph!.values[0];
     final secondValue = _activeDrawnGraph!.values[1];
     final thirdValue = _activeDrawnGraph!.values[2];
-    final minIndex = min(firstValue.index, secondValue.index);
-    final maxIndex = max(firstValue.index, secondValue.index);
-    if (thirdValue.index < minIndex) {
+    final minIndex = min(firstValue.index!, secondValue.index!);
+    final maxIndex = max(firstValue.index!, secondValue.index!);
+    if (thirdValue.index! < minIndex) {
       thirdValue.index = minIndex;
     }
-    if (thirdValue.index > maxIndex) {
+    if (thirdValue.index! > maxIndex) {
       thirdValue.index = maxIndex;
     }
   }
@@ -510,9 +532,9 @@ class GraphPainter extends CustomPainter {
     var value1 = graph.values.first;
     var value2 = graph.values.last;
     var p1 = Offset(
-        _translateIndexToX(value1.index), stockPainter.getMainY(value1.price));
+        _translateIndexToX(value1.index!), stockPainter.getMainY(value1.price));
     var p2 = Offset(
-        _translateIndexToX(value2.index), stockPainter.getMainY(value2.price));
+        _translateIndexToX(value2.index!), stockPainter.getMainY(value2.price));
     var valueRect = Rect.fromPoints(p1, p2).inflate(_graphDetectWidth);
     return valueRect.contains(touchPoint);
   }
@@ -567,16 +589,16 @@ class GraphPainter extends CustomPainter {
     var value1 = graph.values.first;
     var value2 = graph.values.last;
     var p1 = Offset(
-        _translateIndexToX(value1.index), stockPainter.getMainY(value1.price));
+        _translateIndexToX(value1.index!), stockPainter.getMainY(value1.price));
     var p2 = Offset(
-        _translateIndexToX(value2.index), stockPainter.getMainY(value2.price));
+        _translateIndexToX(value2.index!), stockPainter.getMainY(value2.price));
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
     var rightEdgePoint = _getRightEdgePoint(p1, p2);
 
     switch (graph.drawType) {
       case DrawnGraphType.segmentLine:
-      case DrawnGraphType.horizontalSegmentLine:
-      case DrawnGraphType.verticalSegmentLine:
+      case DrawnGraphType.hSegmentLine:
+      case DrawnGraphType.vSegmentLine:
         return DistanceUtil.distanceToSegment(touchPoint, p1, p2);
       case DrawnGraphType.rayLine:
         if (p1.dx < p2.dx) {
@@ -587,7 +609,7 @@ class GraphPainter extends CustomPainter {
           return DistanceUtil.distanceToSegment(touchPoint, leftEdgePoint, p1);
         }
       case DrawnGraphType.straightLine:
-      case DrawnGraphType.horizontalStraightLine:
+      case DrawnGraphType.hStraightLine:
         return DistanceUtil.distanceToSegment(
             touchPoint, leftEdgePoint, rightEdgePoint);
       default:
@@ -598,7 +620,7 @@ class GraphPainter extends CustomPainter {
   /// 点到各种形状的锚点的距离
   double _distanceToGraphAnchorPoint(
       Offset touchPoint, DrawGraphRawValue anchorValue) {
-    var anchorPoint = Offset(_translateIndexToX(anchorValue.index),
+    var anchorPoint = Offset(_translateIndexToX(anchorValue.index!),
         stockPainter.getMainY(anchorValue.price));
     return DistanceUtil.distanceToPoint(touchPoint, anchorPoint);
   }

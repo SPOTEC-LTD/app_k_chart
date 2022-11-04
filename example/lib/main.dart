@@ -7,8 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/entity/draw_graph_entity.dart';
 import 'package:k_chart/flutter_k_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
+
+const _timeInterval = 24 * 60 * 60 * 1000;
 
 class MyApp extends StatelessWidget {
   @override
@@ -34,6 +37,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<KLineEntity>? datas;
+  List<DrawnGraphEntity>? _localGraphs;
   bool showLoading = true;
   bool _enableDraw = true;
   MainState _mainState = MainState.MA;
@@ -55,7 +59,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    getData('1day');
     rootBundle.loadString('assets/depth.json').then((result) {
       final parseJson = json.decode(result);
       final tick = parseJson['tick'] as Map<String, dynamic>;
@@ -68,6 +71,21 @@ class _MyHomePageState extends State<MyHomePage> {
               (item) => DepthEntity(item[0] as double, item[1] as double))
           .toList();
       initDepth(bids, asks);
+    });
+    SharedPreferences.getInstance().then((sp) {
+      final graphsJson = sp.getString('spKey');
+      if (graphsJson != null) {
+        final graphsMap =
+            (json.decode(graphsJson) as List).cast<Map<String, Object?>>();
+        _localGraphs = graphsMap.map((e) {
+          final graph = DrawnGraphEntity.fromMap(e);
+          graph.values.forEach((value) {
+            value.index = null;
+          });
+          return graph;
+        }).toList();
+      }
+      getData('1day');
     });
   }
 
@@ -109,9 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
             width: double.infinity,
             child: KChartWidget(
               datas,
-              24 * 60 * 60 * 1000,
               chartStyle,
               chartColors,
+              timeInterval: _timeInterval,
               chartController: _chartController,
               enableDraw: _enableDraw,
               isLine: isLine,
@@ -129,7 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
               maDayList: [1, 100, 1000],
-              drawFinished: () => print('drawFinished'),
+              drawFinished: _graphFinished,
+              moveFinished: _graphFinished,
               graphDetected: (hashcode) {
                 final active = _chartController.drawnGraphs.firstWhere((graph) {
                   return graph.hashCode == hashcode;
@@ -188,10 +207,10 @@ class _MyHomePageState extends State<MyHomePage> {
           _chartController.drawType = DrawnGraphType.segmentLine;
         }),
         button("HorizontalSegment", onPressed: () {
-          _chartController.drawType = DrawnGraphType.horizontalSegmentLine;
+          _chartController.drawType = DrawnGraphType.hSegmentLine;
         }),
         button("VerticalSegment", onPressed: () {
-          _chartController.drawType = DrawnGraphType.verticalSegmentLine;
+          _chartController.drawType = DrawnGraphType.vSegmentLine;
         }),
         button("Ray", onPressed: () {
           _chartController.drawType = DrawnGraphType.rayLine;
@@ -200,7 +219,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _chartController.drawType = DrawnGraphType.straightLine;
         }),
         button("HorizontalStraight", onPressed: () {
-          _chartController.drawType = DrawnGraphType.horizontalStraightLine;
+          _chartController.drawType = DrawnGraphType.hStraightLine;
         }),
         button("ParallelLines", onPressed: () {
           _chartController.drawType = DrawnGraphType.parallelLine;
@@ -339,6 +358,49 @@ class _MyHomePageState extends State<MyHomePage> {
         .cast<KLineEntity>();
     DataUtil.calculate(datas!);
     showLoading = false;
-    setState(() {});
+
+    _localGraphs?.forEach((graph) {
+      graph.values.forEach((value) {
+        value.index = _calculateIndexFromTime(value.time, datas!);
+      });
+    });
+    setState(() {
+      if (_localGraphs != null) {
+        _chartController.drawnGraphs = _localGraphs!;
+      }
+    });
+  }
+
+  double? _calculateIndexFromTime(int? time, List<KLineEntity> datas) {
+    if (time == null || datas.isEmpty) return null;
+    final nextIndex = datas.indexWhere((data) {
+      if (data.time! > time) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+    int baseIndex;
+    int interval;
+    if (nextIndex == -1 || nextIndex == 0) {
+      baseIndex = 0;
+      interval = _timeInterval;
+    } else {
+      baseIndex = nextIndex - 1;
+      final baseTime = datas[baseIndex].time!;
+      final nextTime = datas[nextIndex].time!;
+      interval = nextTime - baseTime;
+    }
+    return (time - datas[baseIndex].time!) / interval + baseIndex;
+  }
+
+  void _graphFinished() {
+    final graphsMap =
+        _chartController.drawnGraphs.map((e) => e.toMap()).toList();
+    final graphsJson = json.encode(graphsMap);
+    print(graphsJson);
+    SharedPreferences.getInstance().then((sp) {
+      sp.setString('spKey', graphsJson);
+    });
   }
 }

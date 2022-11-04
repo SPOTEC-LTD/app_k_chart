@@ -55,14 +55,17 @@ class KChartWidget extends StatefulWidget {
   /// 选中激活某个图形，返回该图形的hashcode
   final ValueSetter<int>? graphDetected;
 
+  /// 当前图形移动完成
+  final VoidCallback? moveFinished;
+
   /// 画图点击事件超出主图范围
   final VoidCallback? outMainTap;
 
   KChartWidget(
     this.datas,
-    this.timeInterval,
     this.chartStyle,
     this.chartColors, {
+    required this.timeInterval,
     required this.isTrendLine,
     this.mainState = MainState.MA,
     this.secondaryState = SecondaryState.MACD,
@@ -88,6 +91,7 @@ class KChartWidget extends StatefulWidget {
     this.outMainTap,
     this.drawFinished,
     this.graphDetected,
+    this.moveFinished,
   });
 
   @override
@@ -523,11 +527,7 @@ class _KChartWidgetState extends State<KChartWidget>
     );
     final paint = CustomPaint(
       size: Size(double.infinity, double.infinity),
-      painter: GraphPainter(
-        stockPainter: stockPainter,
-        drawnGraphs: _chartController.drawnGraphs,
-        timeInterval: widget.timeInterval,
-      ),
+      painter: _graphPainter,
     );
     if (_enableDraw) {
       // 激活的图形是否已完成绘制，已完成才可以拖动，否则会和stockPainter的手势冲突
@@ -591,8 +591,8 @@ class _KChartWidgetState extends State<KChartWidget>
   void _drawDrawnGraph(GraphPainter painter, Offset touchPoint) {
     switch (_chartController.drawType!) {
       case DrawnGraphType.segmentLine:
-      case DrawnGraphType.horizontalSegmentLine:
-      case DrawnGraphType.verticalSegmentLine:
+      case DrawnGraphType.hSegmentLine:
+      case DrawnGraphType.vSegmentLine:
       case DrawnGraphType.rayLine:
       case DrawnGraphType.straightLine:
       case DrawnGraphType.rectangle:
@@ -601,7 +601,7 @@ class _KChartWidgetState extends State<KChartWidget>
       case DrawnGraphType.fiveWave:
         _drawMultiAnchorGraph(painter, touchPoint);
         break;
-      case DrawnGraphType.horizontalStraightLine:
+      case DrawnGraphType.hStraightLine:
         _drawHorizontalStraightLine(painter, touchPoint);
         break;
     }
@@ -656,21 +656,21 @@ class _KChartWidgetState extends State<KChartWidget>
     List<DrawGraphRawValue> values,
     DrawGraphRawValue lastValue,
   ) {
-    if (drawType == DrawnGraphType.horizontalSegmentLine) {
+    if (drawType == DrawnGraphType.hSegmentLine) {
       lastValue.price = values.first.price;
     }
-    if (drawType == DrawnGraphType.verticalSegmentLine) {
+    if (drawType == DrawnGraphType.vSegmentLine) {
       lastValue.index = values.first.index;
     }
     if (drawType == DrawnGraphType.parallelLine) {
       final firstValue = values[0];
       final secondValue = values[1];
-      final minIndex = min(firstValue.index, secondValue.index);
-      final maxIndex = max(firstValue.index, secondValue.index);
-      if (lastValue.index < minIndex) {
+      final minIndex = min(firstValue.index!, secondValue.index!);
+      final maxIndex = max(firstValue.index!, secondValue.index!);
+      if (lastValue.index! < minIndex) {
         lastValue.index = minIndex;
       }
-      if (lastValue.index > maxIndex) {
+      if (lastValue.index! > maxIndex) {
         lastValue.index = maxIndex;
       }
     }
@@ -686,7 +686,7 @@ class _KChartWidgetState extends State<KChartWidget>
     } else {
       // 第二个点不会被绘制
       final graphValue2 = DrawGraphRawValue(
-        index: graphValue.index + 5,
+        index: graphValue.index! + 5,
         price: graphValue.price,
       );
       final drawingGraph = DrawnGraphEntity(
@@ -724,11 +724,13 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 编辑中的图形移动完成
   void _activeGraphMoveEnd(GraphPainter painter) {
+    if (painter.activeDrawnGraph == null) return;
     painter.activeDrawnGraph?.values.forEach((value) {
-      final indexTime = painter.calculateIndexTime(value.index);
+      final indexTime = painter.calculateIndexTime(value.index!);
       value.time = indexTime;
     });
     _currentPressValue = null;
     _pressAnchorIndex = null;
+    widget.moveFinished?.call();
   }
 }
