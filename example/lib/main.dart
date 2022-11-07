@@ -147,8 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
               maDayList: [1, 100, 1000],
-              drawFinished: _graphFinished,
-              moveFinished: _graphFinished,
+              drawGraph: (isFinished) => _graphFinished(isFinished: isFinished),
+              moveFinished: () => _graphFinished(isFinished: true),
               anyGraphDetected: (detected) {
                 print(detected);
               },
@@ -390,7 +390,9 @@ class _MyHomePageState extends State<MyHomePage> {
     return (time - datas[baseIndex].time!) / interval + baseIndex;
   }
 
-  void _graphFinished() {
+  void _graphFinished({required bool isFinished}) {
+    print(isFinished);
+    if (!isFinished) return;
     final graphsMap =
         _chartController.drawnGraphs.map((e) => e.toMap()).toList();
     final graphsJson = json.encode(graphsMap);

@@ -49,8 +49,8 @@ class KChartWidget extends StatefulWidget {
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
 
-  /// 当前图形绘制完成的回调
-  final VoidCallback? drawFinished;
+  /// 绘制当前图形，返回值表示是否绘制完成
+  final ValueSetter<bool>? drawGraph;
 
   /// 是否激活了某个图形
   final ValueSetter<bool>? anyGraphDetected;
@@ -89,7 +89,7 @@ class KChartWidget extends StatefulWidget {
     this.chartController,
     this.enableDraw = false,
     this.outMainTap,
-    this.drawFinished,
+    this.drawGraph,
     this.anyGraphDetected,
     this.moveFinished,
   });
@@ -648,7 +648,9 @@ class _KChartWidgetState extends State<KChartWidget>
     // 结束绘制当前图形
     if (drawnGraphs.last.values.length == anchorCount) {
       _chartController.drawType = null;
-      widget.drawFinished?.call();
+      widget.drawGraph?.call(true);
+    } else {
+      widget.drawGraph?.call(false);
     }
     _chartController.drawnGraphs = drawnGraphs;
   }
@@ -700,7 +702,7 @@ class _KChartWidgetState extends State<KChartWidget>
       drawnGraphs.add(drawingGraph);
       _chartController.drawType = null;
       _chartController.drawnGraphs = drawnGraphs;
-      widget.drawFinished?.call();
+      widget.drawGraph?.call(true);
     }
   }
 
