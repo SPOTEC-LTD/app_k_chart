@@ -52,8 +52,8 @@ class KChartWidget extends StatefulWidget {
   /// 当前图形绘制完成的回调
   final VoidCallback? drawFinished;
 
-  /// 选中激活某个图形，返回该图形的hashcode
-  final ValueSetter<int>? graphDetected;
+  /// 是否激活了某个图形
+  final ValueSetter<bool>? anyGraphDetected;
 
   /// 当前图形移动完成
   final VoidCallback? moveFinished;
@@ -90,7 +90,7 @@ class KChartWidget extends StatefulWidget {
     this.enableDraw = false,
     this.outMainTap,
     this.drawFinished,
-    this.graphDetected,
+    this.anyGraphDetected,
     this.moveFinished,
   });
 
@@ -578,8 +578,11 @@ class _KChartWidgetState extends State<KChartWidget>
   void _mainRectTappedWithEnableDraw(GraphPainter painter, Offset touchPoint) {
     if (_chartController.drawType == null) {
       painter.detectDrawnGraphs(touchPoint);
-      if (painter.activeDrawnGraph != null) {
-        widget.graphDetected?.call(painter.activeDrawnGraph!.hashCode);
+      // 是否有图形被激活
+      if (painter.activeDrawnGraph == null) {
+        widget.anyGraphDetected?.call(false);
+      } else {
+        widget.anyGraphDetected?.call(true);
       }
       notifyChanged();
     } else {

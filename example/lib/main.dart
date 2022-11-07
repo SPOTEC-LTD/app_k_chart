@@ -149,11 +149,8 @@ class _MyHomePageState extends State<MyHomePage> {
               maDayList: [1, 100, 1000],
               drawFinished: _graphFinished,
               moveFinished: _graphFinished,
-              graphDetected: (hashcode) {
-                final active = _chartController.drawnGraphs.firstWhere((graph) {
-                  return graph.hashCode == hashcode;
-                });
-                print(active.hashCode);
+              anyGraphDetected: (detected) {
+                print(detected);
               },
             ),
           ),
@@ -302,7 +299,6 @@ class _MyHomePageState extends State<MyHomePage> {
       },
       child: Text(text),
       style: TextButton.styleFrom(
-        primary: Colors.white,
         minimumSize: const Size(88, 44),
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         shape: const RoundedRectangleBorder(
