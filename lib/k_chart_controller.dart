@@ -27,7 +27,9 @@ class KChartController extends ChangeNotifier {
   /// 绘制图形的类型
   set drawType(DrawnGraphType? type) {
     _drawType = type;
-    if (type != null) {
+    if (type == null) {
+      notifyListeners();
+    } else {
       deactivateAllDrawnGraphs();
     }
   }
