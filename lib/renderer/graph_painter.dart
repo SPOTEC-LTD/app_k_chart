@@ -47,15 +47,15 @@ class GraphPainter extends CustomPainter {
     ..strokeWidth = 1.0
     ..isAntiAlias = true
     ..style = PaintingStyle.stroke
-    ..color = strokeColor ?? const Color.fromRGBO(243, 78, 108, 1);
+    ..color = strokeColor ?? const Color.fromRGBO(15, 181, 218, 1);
 
   late final _fillPaint = Paint()
     ..isAntiAlias = true
-    ..color = fillColor ?? const Color.fromRGBO(243, 78, 108, 0.2);
+    ..color = fillColor ?? const Color.fromRGBO(15, 181, 218, 0.2);
 
   late final _anchorPaint = Paint()
     ..isAntiAlias = true
-    ..color = anchorColor ?? const Color.fromRGBO(243, 78, 108, 1);
+    ..color = anchorColor ?? const Color.fromRGBO(15, 181, 218, 1);
 
   final _pointRadius = 5.0;
 

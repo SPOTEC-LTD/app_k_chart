@@ -546,6 +546,9 @@ class _KChartWidgetState extends State<KChartWidget>
       stockPainter: stockPainter,
       drawnGraphs: _chartController.drawnGraphs,
       timeInterval: widget.timeInterval,
+      strokeColor: widget.strokeColor,
+      fillColor: widget.fillColor,
+      anchorColor: widget.anchorColor,
     );
     final paint = CustomPaint(
       size: Size(double.infinity, double.infinity),
