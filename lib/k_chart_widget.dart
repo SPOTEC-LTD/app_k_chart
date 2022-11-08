@@ -46,11 +46,23 @@ class KChartWidget extends StatefulWidget {
   /// 是否启用绘图模式
   final bool enableDraw;
 
+  /// 绘制图形的类型
+  final DrawnGraphType? drawType;
+
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
 
+  /// 图形描边颜色
+  final Color? strokeColor;
+
+  /// 图形填充颜色
+  final Color? fillColor;
+
+  /// 图形锚点颜色
+  final Color? anchorColor;
+
   /// 绘制当前图形，返回值表示是否绘制完成
-  final ValueSetter<bool>? drawGraph;
+  final ValueSetter<bool>? drawGraphProgress;
 
   /// 是否激活了某个图形
   final ValueSetter<bool>? anyGraphDetected;
@@ -88,8 +100,12 @@ class KChartWidget extends StatefulWidget {
     this.verticalTextAlignment = VerticalTextAlignment.left,
     this.chartController,
     this.enableDraw = false,
+    this.drawType,
+    this.strokeColor,
+    this.fillColor,
+    this.anchorColor,
     this.outMainTap,
-    this.drawGraph,
+    this.drawGraphProgress,
     this.anyGraphDetected,
     this.moveFinished,
   });
@@ -142,6 +158,7 @@ class _KChartWidgetState extends State<KChartWidget>
   void initState() {
     super.initState();
     mInfoWindowStream = StreamController<InfoWindowEntity?>();
+    _chartController.hideInfoDialogFunction = _hideInfoDialog;
     _chartController.addListener(_onChartController);
   }
 
@@ -155,6 +172,7 @@ class _KChartWidgetState extends State<KChartWidget>
     mInfoWindowStream?.close();
     _controller?.dispose();
     _chartController.removeListener(_onChartController);
+    _defaultChartController.dispose();
     super.dispose();
   }
 
@@ -332,7 +350,7 @@ class _KChartWidgetState extends State<KChartWidget>
               if ((widget.datas != null && widget.datas!.isNotEmpty) &&
                   _chartController.showDrawnGraphs &&
                   (_chartController.drawnGraphs.isNotEmpty ||
-                      _chartController.drawType != null))
+                      widget.drawType != null))
                 _buildDrawGraphView(_stockPainter),
               if (widget.showInfoDialog) _buildInfoDialog()
             ],
@@ -342,10 +360,14 @@ class _KChartWidgetState extends State<KChartWidget>
     );
   }
 
-  void _onChartController() {
+  void _hideInfoDialog() {
     isLongPress = false;
     isOnTap = false;
     mInfoWindowStream?.sink.add(null);
+    notifyChanged();
+  }
+
+  void _onChartController() {
     notifyChanged();
   }
 
@@ -576,7 +598,7 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 手绘模式下，主图范围内被点击
   void _mainRectTappedWithEnableDraw(GraphPainter painter, Offset touchPoint) {
-    if (_chartController.drawType == null) {
+    if (widget.drawType == null) {
       painter.detectDrawnGraphs(touchPoint);
       // 是否有图形被激活
       if (painter.activeDrawnGraph == null) {
@@ -592,7 +614,7 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 开始绘制图形
   void _drawDrawnGraph(GraphPainter painter, Offset touchPoint) {
-    switch (_chartController.drawType!) {
+    switch (widget.drawType!) {
       case DrawnGraphType.segmentLine:
       case DrawnGraphType.hSegmentLine:
       case DrawnGraphType.vSegmentLine:
@@ -612,12 +634,12 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 绘制有多个锚点的图形
   void _drawMultiAnchorGraph(GraphPainter painter, Offset touchPoint) {
-    final anchorCount = _chartController.drawType!.anchorCount;
+    final anchorCount = widget.drawType!.anchorCount;
     final drawnGraphs = List.of(_chartController.drawnGraphs);
     // 没有绘制的图形，或者绘制的图形都已经完成绘制，则添加新图形
     if (drawnGraphs.isEmpty || !drawnGraphs.last.isActive) {
       final drawingGraph = DrawnGraphEntity(
-        drawType: _chartController.drawType!,
+        drawType: widget.drawType!,
         values: [],
         isActive: true,
       );
@@ -637,7 +659,7 @@ class _KChartWidgetState extends State<KChartWidget>
         if (sameValue != null) return;
         if (drawnGraphs.last.values.length == anchorCount - 1) {
           graphValue = _getLastAnchorGraphValue(
-            _chartController.drawType!,
+            widget.drawType!,
             drawnGraphs.last.values,
             graphValue,
           );
@@ -647,10 +669,9 @@ class _KChartWidgetState extends State<KChartWidget>
     }
     // 结束绘制当前图形
     if (drawnGraphs.last.values.length == anchorCount) {
-      _chartController.drawType = null;
-      widget.drawGraph?.call(true);
+      widget.drawGraphProgress?.call(true);
     } else {
-      widget.drawGraph?.call(false);
+      widget.drawGraphProgress?.call(false);
     }
     _chartController.drawnGraphs = drawnGraphs;
   }
@@ -695,14 +716,13 @@ class _KChartWidgetState extends State<KChartWidget>
         price: graphValue.price,
       );
       final drawingGraph = DrawnGraphEntity(
-        drawType: _chartController.drawType!,
+        drawType: widget.drawType!,
         values: [graphValue, graphValue2],
         isActive: true,
       );
       drawnGraphs.add(drawingGraph);
-      _chartController.drawType = null;
       _chartController.drawnGraphs = drawnGraphs;
-      widget.drawGraph?.call(true);
+      widget.drawGraphProgress?.call(true);
     }
   }
 

@@ -55,6 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   ChartStyle chartStyle = ChartStyle();
   ChartColors chartColors = ChartColors();
   final _chartController = KChartController();
+  DrawnGraphType? _drawType;
 
   @override
   void initState() {
@@ -132,6 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
               timeInterval: _timeInterval,
               chartController: _chartController,
               enableDraw: _enableDraw,
+              drawType: _drawType,
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -147,7 +149,8 @@ class _MyHomePageState extends State<MyHomePage> {
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
               maDayList: [1, 100, 1000],
-              drawGraph: (isFinished) => _graphFinished(isFinished: isFinished),
+              drawGraphProgress: (isFinished) =>
+                  _graphFinished(isFinished: isFinished),
               moveFinished: () => _graphFinished(isFinished: true),
               anyGraphDetected: (detected) {
                 print(detected);
@@ -201,40 +204,42 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
         button("Segment", onPressed: () {
-          _chartController.drawType = DrawnGraphType.segmentLine;
+          _changeDrawType(DrawnGraphType.segmentLine);
         }),
         button("HorizontalSegment", onPressed: () {
-          _chartController.drawType = DrawnGraphType.hSegmentLine;
+          _changeDrawType(DrawnGraphType.hSegmentLine);
         }),
         button("VerticalSegment", onPressed: () {
-          _chartController.drawType = DrawnGraphType.vSegmentLine;
+          _changeDrawType(DrawnGraphType.vSegmentLine);
         }),
         button("Ray", onPressed: () {
-          _chartController.drawType = DrawnGraphType.rayLine;
+          _changeDrawType(DrawnGraphType.rayLine);
         }),
         button("Straight", onPressed: () {
-          _chartController.drawType = DrawnGraphType.straightLine;
+          _changeDrawType(DrawnGraphType.straightLine);
         }),
         button("HorizontalStraight", onPressed: () {
-          _chartController.drawType = DrawnGraphType.hStraightLine;
+          _changeDrawType(DrawnGraphType.hStraightLine);
         }),
         button("ParallelLines", onPressed: () {
-          _chartController.drawType = DrawnGraphType.parallelLine;
+          _changeDrawType(DrawnGraphType.parallelLine);
         }),
         button("Rect", onPressed: () {
-          _chartController.drawType = DrawnGraphType.rectangle;
+          _changeDrawType(DrawnGraphType.rectangle);
         }),
         button("ThreeWave", onPressed: () {
-          _chartController.drawType = DrawnGraphType.threeWave;
+          _changeDrawType(DrawnGraphType.threeWave);
         }),
         button("FiveWave", onPressed: () {
-          _chartController.drawType = DrawnGraphType.fiveWave;
+          _changeDrawType(DrawnGraphType.fiveWave);
         }),
         button("Clear All", onPressed: () {
           _chartController.removeAllDrawnGraphs();
+          _graphFinished(isFinished: true);
         }),
         button("Clear Active", onPressed: () {
           _chartController.removeActiveGraph();
+          _graphFinished(isFinished: true);
         }),
         button("Time Mode", onPressed: () => isLine = true),
         button("K Line Mode", onPressed: () => isLine = false),
@@ -297,7 +302,7 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {});
         }
       },
-      child: Text(text),
+      child: Text(text, style: TextStyle(color: Colors.white)),
       style: TextButton.styleFrom(
         minimumSize: const Size(88, 44),
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -393,12 +398,22 @@ class _MyHomePageState extends State<MyHomePage> {
   void _graphFinished({required bool isFinished}) {
     print(isFinished);
     if (!isFinished) return;
+    _changeDrawType(null);
     final graphsMap =
         _chartController.drawnGraphs.map((e) => e.toMap()).toList();
     final graphsJson = json.encode(graphsMap);
     print(graphsJson);
     SharedPreferences.getInstance().then((sp) {
       sp.setString('spKey', graphsJson);
+    });
+  }
+
+  void _changeDrawType(DrawnGraphType? type) {
+    if (type != null) {
+      _chartController.deactivateAllDrawnGraphs();
+    }
+    setState(() {
+      _drawType = type;
     });
   }
 }

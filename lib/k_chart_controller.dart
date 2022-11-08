@@ -21,19 +21,6 @@ class KChartController extends ChangeNotifier {
 
   List<DrawnGraphEntity> _drawnGraphs;
 
-  /// 绘制图形的类型
-  DrawnGraphType? get drawType => _drawType;
-
-  /// 绘制图形的类型
-  set drawType(DrawnGraphType? type) {
-    _drawType = type;
-    if (type != null) {
-      deactivateAllDrawnGraphs();
-    }
-  }
-
-  DrawnGraphType? _drawType;
-
   /// 是否显示绘制的图形
   bool get showDrawnGraphs => _showDrawnGraphs;
 
@@ -48,31 +35,31 @@ class KChartController extends ChangeNotifier {
   /// 是否存在激活的图形
   bool get existActiveGraph => _drawnGraphs.any((element) => element.isActive);
 
+  VoidCallback? hideInfoDialogFunction;
+
   /// 隐藏信息弹窗
   void hideInfoDialog() {
-    notifyListeners();
+    hideInfoDialogFunction?.call();
   }
 
   /// 将所有绘制的图形设置为未激活状态，如果图形还未绘制完，则删除该图形
   void deactivateAllDrawnGraphs() {
-    if (drawnGraphs.isNotEmpty && !drawnGraphs.last.drawFinished) {
-      drawnGraphs.removeLast();
+    if (_drawnGraphs.isNotEmpty && !_drawnGraphs.last.drawFinished) {
+      _drawnGraphs.removeLast();
     }
-    drawnGraphs.forEach((graph) => graph.isActive = false);
+    _drawnGraphs.forEach((graph) => graph.isActive = false);
     notifyListeners();
   }
 
   /// 移除绘制中的、编辑中的图形
   void removeActiveGraph() {
-    _drawType = null;
-    drawnGraphs.removeWhere((graph) => graph.isActive);
+    _drawnGraphs.removeWhere((graph) => graph.isActive);
     notifyListeners();
   }
 
   /// 移除所有绘制的图形
   void removeAllDrawnGraphs() {
-    _drawType = null;
-    drawnGraphs = [];
+    _drawnGraphs = [];
     notifyListeners();
   }
 }

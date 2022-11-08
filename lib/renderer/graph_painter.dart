@@ -15,6 +15,9 @@ class GraphPainter extends CustomPainter {
     required this.stockPainter,
     required this.drawnGraphs,
     required this.timeInterval,
+    this.strokeColor,
+    this.fillColor,
+    this.anchorColor,
   }) : _activeDrawnGraph =
             drawnGraphs.firstWhereOrNull((graph) => graph.isActive);
 
@@ -23,6 +26,12 @@ class GraphPainter extends CustomPainter {
 
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
+
+  final Color? strokeColor;
+
+  final Color? fillColor;
+
+  final Color? anchorColor;
 
   Rect get mMainRect => stockPainter.mMainRect;
 
@@ -34,21 +43,21 @@ class GraphPainter extends CustomPainter {
 
   DrawnGraphEntity? get activeDrawnGraph => _activeDrawnGraph;
 
-  final _strokePaint = Paint()
+  late final _strokePaint = Paint()
     ..strokeWidth = 1.0
     ..isAntiAlias = true
     ..style = PaintingStyle.stroke
-    ..color = Colors.red;
+    ..color = strokeColor ?? const Color.fromRGBO(243, 78, 108, 1);
 
-  final _fillPaint = Paint()
+  late final _fillPaint = Paint()
     ..isAntiAlias = true
-    ..color = Colors.red.withOpacity(0.2);
+    ..color = fillColor ?? const Color.fromRGBO(243, 78, 108, 0.2);
 
-  final _anchorPaint = Paint()
+  late final _anchorPaint = Paint()
     ..isAntiAlias = true
-    ..color = Colors.orange;
+    ..color = anchorColor ?? const Color.fromRGBO(243, 78, 108, 1);
 
-  final _pointRadius = 7.5;
+  final _pointRadius = 5.0;
 
   /// 判断激活哪个图形时，添加的外边距
   final _graphDetectWidth = 10.0;
@@ -64,6 +73,7 @@ class GraphPainter extends CustomPainter {
     drawnGraphs.forEach((graph) {
       _drawSingleGraph(canvas, graph);
     });
+    _drawActiveAnchorPoints(canvas, _activeDrawnGraph);
     canvas.restore();
   }
 
@@ -102,7 +112,6 @@ class GraphPainter extends CustomPainter {
         break;
       default:
     }
-    _drawActiveAnchorPoints(canvas, graph);
   }
 
   /// 获取图形的所有锚点坐标
@@ -120,8 +129,8 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 绘制激活的图形的锚点
-  void _drawActiveAnchorPoints(Canvas canvas, DrawnGraphEntity graph) {
-    if (!graph.isActive) return;
+  void _drawActiveAnchorPoints(Canvas canvas, DrawnGraphEntity? graph) {
+    if (graph == null || !graph.isActive) return;
     final points = _getAnchorPoints(graph);
     // 水平直线只显示一个锚点
     if (graph.drawType == DrawnGraphType.hStraightLine) {
