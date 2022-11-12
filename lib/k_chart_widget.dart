@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -648,62 +647,37 @@ class _KChartWidgetState extends State<KChartWidget>
       );
       drawnGraphs.add(drawingGraph);
     }
+    final lastDrawnGraph = drawnGraphs.last;
     // 继续绘制当前图形
-    if (drawnGraphs.last.values.length < anchorCount) {
+    if (lastDrawnGraph.values.length < anchorCount) {
       var graphValue = painter.calculateTouchRawValue(touchPoint);
       if (graphValue == null) {
         widget.outMainTap?.call();
       } else {
-        final sameValue = drawnGraphs.last.values.firstWhereOrNull((element) {
+        final sameValue = lastDrawnGraph.values.firstWhereOrNull((element) {
           return element.index == graphValue!.index &&
               element.price == graphValue.price;
         });
         // 是否已经存在相同的锚点
         if (sameValue != null) return;
-        if (drawnGraphs.last.values.length == anchorCount - 1) {
-          graphValue = _getLastAnchorGraphValue(
+        if (lastDrawnGraph.values.length == anchorCount - 1) {
+          graphValue = painter.getLastAnchorGraphValue(
             widget.drawType!,
-            drawnGraphs.last.values,
+            lastDrawnGraph.values,
             graphValue,
           );
         }
-        drawnGraphs.last.values.add(graphValue);
+        lastDrawnGraph.values.add(graphValue);
       }
     }
-    // 结束绘制当前图形
-    if (drawnGraphs.last.values.length == anchorCount) {
+    if (lastDrawnGraph.values.length == anchorCount) {
+      // 结束绘制当前图形
+      painter.calculateDrawnGraphTime(lastDrawnGraph);
       widget.drawGraphProgress?.call(true);
     } else {
       widget.drawGraphProgress?.call(false);
     }
     _chartController.drawnGraphs = drawnGraphs;
-  }
-
-  /// 全部锚点图形的最后一个的value
-  DrawGraphRawValue _getLastAnchorGraphValue(
-    DrawnGraphType drawType,
-    List<DrawGraphRawValue> values,
-    DrawGraphRawValue lastValue,
-  ) {
-    if (drawType == DrawnGraphType.hSegmentLine) {
-      lastValue.price = values.first.price;
-    }
-    if (drawType == DrawnGraphType.vSegmentLine) {
-      lastValue.index = values.first.index;
-    }
-    if (drawType == DrawnGraphType.parallelLine) {
-      final firstValue = values[0];
-      final secondValue = values[1];
-      final minIndex = min(firstValue.index!, secondValue.index!);
-      final maxIndex = max(firstValue.index!, secondValue.index!);
-      if (lastValue.index! < minIndex) {
-        lastValue.index = minIndex;
-      }
-      if (lastValue.index! > maxIndex) {
-        lastValue.index = maxIndex;
-      }
-    }
-    return lastValue;
   }
 
   /// 绘制水平直线
@@ -724,6 +698,8 @@ class _KChartWidgetState extends State<KChartWidget>
         isActive: true,
       );
       drawnGraphs.add(drawingGraph);
+      // 结束绘制当前图形
+      painter.calculateDrawnGraphTime(drawingGraph);
       _chartController.drawnGraphs = drawnGraphs;
       widget.drawGraphProgress?.call(true);
     }
@@ -753,10 +729,7 @@ class _KChartWidgetState extends State<KChartWidget>
   /// 编辑中的图形移动完成
   void _activeGraphMoveEnd(GraphPainter painter) {
     if (painter.activeDrawnGraph == null) return;
-    painter.activeDrawnGraph?.values.forEach((value) {
-      final indexTime = painter.calculateIndexTime(value.index!);
-      value.time = indexTime;
-    });
+    painter.calculateDrawnGraphTime(painter.activeDrawnGraph);
     _currentPressValue = null;
     _pressAnchorIndex = null;
     widget.moveFinished?.call();

@@ -286,8 +286,42 @@ class GraphPainter extends CustomPainter {
   DrawGraphRawValue? calculateTouchRawValue(Offset touchPoint) {
     var index = stockPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
     var price = _getMainPrice(touchPoint.dy);
-    final pointTime = calculateIndexTime(index);
-    return DrawGraphRawValue(index: index, price: price, time: pointTime);
+    return DrawGraphRawValue(index: index, price: price);
+  }
+
+  /// 全部锚点图形的最后一个的value
+  DrawGraphRawValue getLastAnchorGraphValue(
+    DrawnGraphType drawType,
+    List<DrawGraphRawValue> values,
+    DrawGraphRawValue lastValue,
+  ) {
+    if (drawType == DrawnGraphType.hSegmentLine) {
+      lastValue.price = values.first.price;
+    }
+    if (drawType == DrawnGraphType.vSegmentLine) {
+      lastValue.index = values.first.index;
+    }
+    if (drawType == DrawnGraphType.parallelLine) {
+      final firstValue = values[0];
+      final secondValue = values[1];
+      final minIndex = min(firstValue.index!, secondValue.index!);
+      final maxIndex = max(firstValue.index!, secondValue.index!);
+      if (lastValue.index! < minIndex) {
+        lastValue.index = minIndex;
+      }
+      if (lastValue.index! > maxIndex) {
+        lastValue.index = maxIndex;
+      }
+    }
+    return lastValue;
+  }
+
+  /// 计算指定图形的时间
+  void calculateDrawnGraphTime(DrawnGraphEntity? graph) {
+    graph?.values.forEach((value) {
+      final indexTime = calculateIndexTime(value.index!);
+      value.time = indexTime;
+    });
   }
 
   int? calculateIndexTime(double index) {
