@@ -134,6 +134,12 @@ class _MyHomePageState extends State<MyHomePage> {
               chartController: _chartController,
               enableDraw: _enableDraw,
               drawType: _drawType,
+              drawStyle: DrawnGraphStyle(
+                strokeColor: Colors.yellow,
+                fillColor: Colors.red.withOpacity(0.2),
+                lineWidth: 1,
+                dashArray: [4, 4],
+              ),
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -153,7 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   _graphFinished(isFinished: isFinished),
               moveFinished: () => _graphFinished(isFinished: true),
               anyGraphDetected: (detected) {
-                print(detected);
+                print('detected $detected');
               },
             ),
           ),

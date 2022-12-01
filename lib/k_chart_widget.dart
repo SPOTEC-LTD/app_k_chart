@@ -48,17 +48,11 @@ class KChartWidget extends StatefulWidget {
   /// 绘制图形的类型
   final DrawnGraphType? drawType;
 
+  /// 绘制图形的样式
+  final DrawnGraphStyle? drawStyle;
+
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
-
-  /// 图形描边颜色
-  final Color? strokeColor;
-
-  /// 图形填充颜色
-  final Color? fillColor;
-
-  /// 图形锚点颜色
-  final Color? anchorColor;
 
   /// 绘制当前图形，返回值表示是否绘制完成
   final ValueSetter<bool>? drawGraphProgress;
@@ -100,9 +94,7 @@ class KChartWidget extends StatefulWidget {
     this.chartController,
     this.enableDraw = false,
     this.drawType,
-    this.strokeColor,
-    this.fillColor,
-    this.anchorColor,
+    this.drawStyle,
     this.outMainTap,
     this.drawGraphProgress,
     this.anyGraphDetected,
@@ -349,7 +341,7 @@ class _KChartWidgetState extends State<KChartWidget>
               if ((widget.datas != null && widget.datas!.isNotEmpty) &&
                   _chartController.showDrawnGraphs &&
                   (_chartController.drawnGraphs.isNotEmpty ||
-                      widget.drawType != null))
+                      (widget.drawType != null && widget.drawStyle != null)))
                 _buildDrawGraphView(_stockPainter),
               if (widget.showInfoDialog) _buildInfoDialog()
             ],
@@ -545,9 +537,6 @@ class _KChartWidgetState extends State<KChartWidget>
       stockPainter: stockPainter,
       drawnGraphs: _chartController.drawnGraphs,
       timeInterval: widget.timeInterval,
-      strokeColor: widget.strokeColor,
-      fillColor: widget.fillColor,
-      anchorColor: widget.anchorColor,
     );
     final paint = CustomPaint(
       size: Size(double.infinity, double.infinity),
@@ -644,6 +633,7 @@ class _KChartWidgetState extends State<KChartWidget>
         drawType: widget.drawType!,
         values: [],
         isActive: true,
+        style: widget.drawStyle!,
       );
       drawnGraphs.add(drawingGraph);
     }
@@ -696,6 +686,7 @@ class _KChartWidgetState extends State<KChartWidget>
         drawType: widget.drawType!,
         values: [graphValue, graphValue2],
         isActive: true,
+        style: widget.drawStyle!,
       );
       drawnGraphs.add(drawingGraph);
       // 结束绘制当前图形

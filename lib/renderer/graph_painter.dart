@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:k_chart/renderer/dash_path.dart';
 import 'package:k_chart/renderer/index.dart';
 
 import '../entity/draw_graph_entity.dart';
@@ -15,9 +16,6 @@ class GraphPainter extends CustomPainter {
     required this.stockPainter,
     required this.drawnGraphs,
     required this.timeInterval,
-    this.strokeColor,
-    this.fillColor,
-    this.anchorColor,
   }) : _activeDrawnGraph =
             drawnGraphs.firstWhereOrNull((graph) => graph.isActive);
 
@@ -26,12 +24,6 @@ class GraphPainter extends CustomPainter {
 
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
-
-  final Color? strokeColor;
-
-  final Color? fillColor;
-
-  final Color? anchorColor;
 
   Rect get mMainRect => stockPainter.mMainRect;
 
@@ -42,20 +34,6 @@ class GraphPainter extends CustomPainter {
   double get mTranslateX => stockPainter.mTranslateX;
 
   DrawnGraphEntity? get activeDrawnGraph => _activeDrawnGraph;
-
-  late final _strokePaint = Paint()
-    ..strokeWidth = 1.0
-    ..isAntiAlias = true
-    ..style = PaintingStyle.stroke
-    ..color = strokeColor ?? const Color.fromRGBO(15, 181, 218, 1);
-
-  late final _fillPaint = Paint()
-    ..isAntiAlias = true
-    ..color = fillColor ?? const Color.fromRGBO(15, 181, 218, 0.2);
-
-  late final _anchorPaint = Paint()
-    ..isAntiAlias = true
-    ..color = anchorColor ?? const Color.fromRGBO(15, 181, 218, 1);
 
   final _pointRadius = 5.0;
 
@@ -82,7 +60,59 @@ class GraphPainter extends CustomPainter {
     return true;
   }
 
-  /// 绘制单个手画图形
+  /// 创建描边的Paint
+  Paint _createStokePaint(DrawnGraphStyle style) {
+    return Paint()
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true
+      ..strokeWidth = style.lineWidth
+      ..color = style.strokeColor;
+  }
+
+  /// 创建填充的Paint
+  Paint _createFillPaint(DrawnGraphStyle style) {
+    return Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..color = style.fillColor ?? Color(DrawnGraphStyle.placeholderColorValue);
+  }
+
+  /// 创建锚点的Paint
+  Paint _createAnchorPaint(DrawnGraphStyle style) {
+    return Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..color = style.strokeColor;
+  }
+
+  /// 根据锚点、样式，绘制图形的线条，例如线段
+  void _drawGraphLine(
+      Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
+    final rawPath = Path()..addPolygon(points, false);
+    final path = style.dashArray == null
+        ? rawPath
+        : dashPath(rawPath, dashArray: CircularIntervalList(style.dashArray!));
+    canvas.drawPath(path, _createStokePaint(style));
+  }
+
+  /// 根据锚点、样式，绘制图形的描边，例如矩形
+  void _drawGraphStroke(
+      Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
+    final rawPath = Path()..addPolygon(points, true);
+    final path = style.dashArray == null
+        ? rawPath
+        : dashPath(rawPath, dashArray: CircularIntervalList(style.dashArray!));
+    canvas.drawPath(path, _createStokePaint(style));
+  }
+
+  /// 根据锚点、样式，绘制图形的填充，例如矩形
+  void _drawGraphFill(
+      Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
+    final path = Path()..addPolygon(points, true);
+    canvas.drawPath(path, _createFillPaint(style));
+  }
+
+  /// 绘制单个手绘图形
   void _drawSingleGraph(Canvas canvas, DrawnGraphEntity? graph) {
     if (graph == null) {
       return;
@@ -137,7 +167,7 @@ class GraphPainter extends CustomPainter {
       points.removeLast();
     }
     points.forEach((element) {
-      canvas.drawCircle(element, _pointRadius, _anchorPaint);
+      canvas.drawCircle(element, _pointRadius, _createAnchorPaint(graph.style));
     });
   }
 
@@ -154,7 +184,7 @@ class GraphPainter extends CustomPainter {
   void _drawSegmentLine(Canvas canvas, DrawnGraphEntity graph) {
     if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
-    canvas.drawLine(points.first, points.last, _strokePaint);
+    _drawGraphLine(canvas, points, graph.style);
   }
 
   /// 绘制射线
@@ -174,7 +204,7 @@ class GraphPainter extends CustomPainter {
       // 端点在画布左侧
       endPoint = leftEdgePoint;
     }
-    canvas.drawLine(p1, endPoint, _strokePaint);
+    _drawGraphLine(canvas, [p1, endPoint], graph.style);
   }
 
   /// 绘制直线
@@ -185,16 +215,18 @@ class GraphPainter extends CustomPainter {
     var p2 = points.last;
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
     var rightEdgePoint = _getRightEdgePoint(p1, p2);
-    canvas.drawLine(leftEdgePoint, rightEdgePoint, _strokePaint);
+    _drawGraphLine(canvas, [leftEdgePoint, rightEdgePoint], graph.style);
   }
 
   /// 绘制矩形
   void _drawRectangle(Canvas canvas, DrawnGraphEntity graph) {
     if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
-    var rect = Rect.fromPoints(points.first, points.last);
-    canvas.drawRect(rect, _strokePaint);
-    canvas.drawRect(rect, _fillPaint);
+    final p1 = points[0];
+    final p2 = points[1];
+    final rectPoints = [p1, Offset(p2.dx, p1.dy), p2, Offset(p1.dx, p2.dy)];
+    _drawGraphStroke(canvas, rectPoints, graph.style);
+    _drawGraphFill(canvas, rectPoints, graph.style);
   }
 
   /// 绘制平行线
@@ -204,25 +236,20 @@ class GraphPainter extends CustomPainter {
     final firstPoint = points[0];
     final secondPoint = points[1];
     // 绘制前两个点指示的直线
-    canvas.drawLine(firstPoint, secondPoint, _strokePaint);
+    _drawGraphLine(canvas, [firstPoint, secondPoint], graph.style);
     if (points.length != 4) return;
     final thirdPoint = points[2];
     final fourthPoint = points[3];
     // 第三个点指示的直线
-    canvas.drawLine(thirdPoint, fourthPoint, _strokePaint);
-
-    final path = Path();
-    path.addPolygon(points, true);
-    canvas.drawPath(path, _fillPaint);
+    _drawGraphLine(canvas, [thirdPoint, fourthPoint], graph.style);
+    _drawGraphFill(canvas, points, graph.style);
   }
 
   /// 绘制几浪
   void _drawWave(Canvas canvas, DrawnGraphEntity graph) {
     final points = _getAnchorPoints(graph);
     if (!_isGraphValid(graph, 2)) return;
-    final path = Path();
-    path.addPolygon(points, false);
-    canvas.drawPath(path, _strokePaint);
+    _drawGraphLine(canvas, points, graph.style);
   }
 
   /// 直线和画板左侧的交点
@@ -375,85 +402,95 @@ class GraphPainter extends CustomPainter {
     }
     drawnGraphs.forEach((graph) => graph.isActive = false);
     _activeDrawnGraph = null;
-    if (_detectSingleLine(touchPoint)) {
-      return;
-    }
-    if (_detectWave(touchPoint)) {
-      return;
-    }
-    if (_detectRectangle(touchPoint)) {
-      return;
-    }
-    if (_detectParallelLinePlane(touchPoint)) {
-      return;
-    }
+    if (_detectLineTypeGraph(touchPoint)) return;
+    if (_detectPlaneTypeGraph(touchPoint)) return;
   }
 
-  /// 根据touch点查找线形，如果找到返回true
-  bool _detectSingleLine(Offset touchPoint) {
-    var singleLineGraphs = drawnGraphs.where((graph) {
-      switch (graph.drawType) {
-        case DrawnGraphType.segmentLine:
-        case DrawnGraphType.hSegmentLine:
-        case DrawnGraphType.vSegmentLine:
-        case DrawnGraphType.rayLine:
-        case DrawnGraphType.straightLine:
-        case DrawnGraphType.hStraightLine:
-          return true;
-        default:
-          return false;
-      }
-    }).toList();
-
-    var minIndex = 0;
-    var minDis = double.infinity;
-    for (var i = singleLineGraphs.length - 1; i >= 0; i--) {
-      var distance = _distanceToSingleLine(touchPoint, singleLineGraphs[i]);
-      if (distance < minDis) {
-        minIndex = i;
-        minDis = distance;
-      }
-    }
-    if (minDis < _graphDetectWidth) {
-      var graph = singleLineGraphs[minIndex];
-      graph.isActive = true;
-      _activeDrawnGraph = graph;
-      return true;
-    }
-    return false;
+  /// 点击的时候，激活图形
+  bool _activeGraph(DrawnGraphEntity graph) {
+    graph.isActive = true;
+    _activeDrawnGraph = graph;
+    return true;
   }
 
-  /// 根据点击的点查找矩形，如果找到返回true
-  bool _detectRectangle(Offset touchPoint) {
+  /// 激活线状图形，返回值表示是否激活成功
+  bool _detectLineTypeGraph(Offset touchPoint) {
+    final detectFunctions = [
+      _detectWaveGraph,
+      _detectNormalLineGraph,
+    ];
     for (var graph in drawnGraphs.reversed) {
-      if (graph.drawType == DrawnGraphType.rectangle &&
-          _isPointInRectangle(touchPoint, graph)) {
-        graph.isActive = true;
-        _activeDrawnGraph = graph;
+      // 任何一个detect返回了true
+      final detectSuccess = detectFunctions.any((function) {
+        return function(graph, touchPoint);
+      });
+      if (detectSuccess) {
         return true;
       }
     }
     return false;
   }
 
-  bool _detectParallelLinePlane(Offset touchPoint) {
+  /// 激活面状图形，返回值表示是否激活成功
+  bool _detectPlaneTypeGraph(Offset touchPoint) {
+    final detectFunctions = [
+      _detectParallelLineGraph,
+      _detectReactGraph,
+    ];
     for (var graph in drawnGraphs.reversed) {
-      if (graph.drawType == DrawnGraphType.parallelLine &&
-          _isPointInParallelLinePlane(touchPoint, graph)) {
-        graph.isActive = true;
-        _activeDrawnGraph = graph;
+      // 任何一个detect返回了true
+      final detectSuccess = detectFunctions.any((function) {
+        return function(graph, touchPoint);
+      });
+      if (detectSuccess) {
         return true;
       }
     }
     return false;
   }
 
-  bool _detectWave(Offset touchPoint) {
-    for (var graph in drawnGraphs.reversed) {
-      if (_isPointInWave(touchPoint, graph)) {
-        graph.isActive = true;
-        _activeDrawnGraph = graph;
-        return true;
+  /// 返回是否成功激活平行线
+  bool _detectParallelLineGraph(DrawnGraphEntity graph, Offset touchPoint) {
+    if (graph.drawType == DrawnGraphType.parallelLine &&
+        _isPointInParallelLinePlane(touchPoint, graph)) {
+      return _activeGraph(graph);
+    }
+    return false;
+  }
+
+  /// 返回是否成功激活矩形
+  bool _detectReactGraph(DrawnGraphEntity graph, Offset touchPoint) {
+    if (graph.drawType == DrawnGraphType.rectangle &&
+        _isPointInRectangle(touchPoint, graph)) {
+      return _activeGraph(graph);
+    }
+    return false;
+  }
+
+  /// 返回是否成功激活几浪
+  bool _detectWaveGraph(DrawnGraphEntity graph, Offset touchPoint) {
+    if ((graph.drawType == DrawnGraphType.threeWave ||
+            graph.drawType == DrawnGraphType.fiveWave) &&
+        _isPointInWave(touchPoint, graph)) {
+      return _activeGraph(graph);
+    }
+    return false;
+  }
+
+  /// 返回是否成功普通线形
+  bool _detectNormalLineGraph(DrawnGraphEntity graph, Offset touchPoint) {
+    final lineTypes = [
+      DrawnGraphType.segmentLine,
+      DrawnGraphType.hSegmentLine,
+      DrawnGraphType.vSegmentLine,
+      DrawnGraphType.rayLine,
+      DrawnGraphType.straightLine,
+      DrawnGraphType.hStraightLine,
+    ];
+    if (lineTypes.contains(graph.drawType)) {
+      var distance = _distanceToSingleLine(touchPoint, graph);
+      if (distance < _graphDetectWidth) {
+        return _activeGraph(graph);
       }
     }
     return false;
