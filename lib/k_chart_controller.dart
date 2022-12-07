@@ -32,8 +32,15 @@ class KChartController extends ChangeNotifier {
 
   bool _showDrawnGraphs = true;
 
-  /// 是否存在激活的图形
-  bool get existActiveGraph => _drawnGraphs.any((element) => element.isActive);
+  /// 激活的图形
+  DrawnGraphEntity? get activeGraph {
+    for (var graph in _drawnGraphs) {
+      if (graph.isActive) {
+        return graph;
+      }
+    }
+    return null;
+  }
 
   VoidCallback? hideInfoDialogFunction;
 
@@ -54,6 +61,14 @@ class KChartController extends ChangeNotifier {
   /// 移除绘制中的、编辑中的图形
   void removeActiveGraph() {
     _drawnGraphs.removeWhere((graph) => graph.isActive);
+    notifyListeners();
+  }
+
+  void updateActiveGraph({DrawnGraphStyle? style, bool? locked}) {
+    final active = activeGraph;
+    if (active == null || (style == null && locked == null)) return;
+    active.style = style ?? active.style;
+    active.isLocked = locked ?? active.isLocked;
     notifyListeners();
   }
 

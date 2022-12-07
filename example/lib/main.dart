@@ -247,6 +247,14 @@ class _MyHomePageState extends State<MyHomePage> {
           _chartController.removeActiveGraph();
           _graphFinished(isFinished: true);
         }),
+        button("Toggle Lock Active", onPressed: () {
+          if (_chartController.activeGraph == null) return;
+          final isLocked = _chartController.drawnGraphs
+              .firstWhere((e) => e.isActive)
+              .isLocked;
+          _chartController.updateActiveGraph(locked: !isLocked);
+          _graphFinished(isFinished: true);
+        }),
         button("Time Mode", onPressed: () => isLine = true),
         button("K Line Mode", onPressed: () => isLine = false),
         button("TrendLine", onPressed: () => _isTrendLine = !_isTrendLine),

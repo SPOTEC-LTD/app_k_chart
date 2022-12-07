@@ -42,8 +42,13 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
 
 /// 绘制图形的锚点
 class DrawGraphRawValue {
+  /// 价格
   double price;
+
+  /// 根据时间戳计算出来的横坐标
   double? index;
+
+  /// 时间戳
   int? time;
 
   DrawGraphRawValue({
@@ -110,13 +115,37 @@ class DrawnGraphStyle {
       'dashArray': dashArray,
     };
   }
+
+  DrawnGraphStyle copyWith(
+    Color? strokeColor,
+    Color? fillColor,
+    double? lineWidth,
+    List<double>? dashArray,
+  ) {
+    return DrawnGraphStyle(
+      strokeColor: strokeColor ?? this.strokeColor,
+      fillColor: fillColor ?? this.fillColor,
+      lineWidth: lineWidth ?? this.lineWidth,
+      dashArray: dashArray ?? this.dashArray,
+    );
+  }
 }
 
 /// 绘制图形的model，包含类型、锚点、样式、是否激活等属性
 class DrawnGraphEntity {
+  /// 图形的类型
   final DrawnGraphType drawType;
-  final DrawnGraphStyle style;
+
+  /// 图形的样式
+  DrawnGraphStyle style;
+
+  /// 图形的各个锚点
   List<DrawGraphRawValue> values;
+
+  /// 图形是否可以移动
+  bool isLocked;
+
+  /// 图形是否激活中
   bool isActive;
 
   /// 当前图形是否绘制完成
@@ -132,6 +161,7 @@ class DrawnGraphEntity {
     required this.drawType,
     required this.style,
     required this.values,
+    this.isLocked = false,
     this.isActive = false,
   });
 
@@ -143,6 +173,7 @@ class DrawnGraphEntity {
         style = map['style'] == null
             ? DrawnGraphStyle.placeholder()
             : DrawnGraphStyle.fromMap(map['style']),
+        isLocked = map['locked'] ?? false,
         isActive = false;
 
   Map<String, Object?> toMap() {
@@ -150,6 +181,7 @@ class DrawnGraphEntity {
       'drawType': drawType.toJson(),
       'values': values.map((e) => e.toMap()).toList(),
       'style': style.toMap(),
+      'locked': isLocked,
       'isActive': false,
     };
   }

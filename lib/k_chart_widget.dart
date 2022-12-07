@@ -551,24 +551,24 @@ class _KChartWidgetState extends State<KChartWidget>
           }
         },
         // onPanStart有等待时间，所以加一个onTapDown
-        onTapDown: _chartController.existActiveGraph
+        onTapDown: _chartController.activeGraph != null
             ? (details) {
                 if (stockPainter.isInMainRect(details.localPosition)) {
                   _beginMoveActiveGraph(_graphPainter, details.localPosition);
                 }
               }
             : null,
-        onPanStart: _chartController.existActiveGraph
+        onPanStart: _chartController.activeGraph != null
             ? (details) {
                 _beginMoveActiveGraph(_graphPainter, details.localPosition);
               }
             : null,
-        onPanUpdate: _chartController.existActiveGraph
+        onPanUpdate: _chartController.activeGraph != null
             ? (details) {
                 _moveActiveGraph(_graphPainter, details.localPosition);
               }
             : null,
-        onPanEnd: _chartController.existActiveGraph
+        onPanEnd: _chartController.activeGraph != null
             ? (details) {
                 _activeGraphMoveEnd(_graphPainter);
               }
@@ -698,7 +698,8 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 滑动、长按，开始移动正在编辑的图形
   void _beginMoveActiveGraph(GraphPainter painter, Offset position) {
-    if (!painter.canBeginMoveActiveGraph(position)) {
+    if (painter.activeDrawnGraph?.isLocked == true ||
+        !painter.canBeginMoveActiveGraph(position)) {
       return;
     }
     _currentPressValue = painter.calculateTouchRawValue(position);
@@ -708,7 +709,9 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 滑动、长按手势移动正在编辑的图形
   void _moveActiveGraph(GraphPainter painter, Offset position) {
-    if (_currentPressValue == null || !painter.haveActiveDrawnGraph()) {
+    if (_currentPressValue == null ||
+        !painter.haveActiveDrawnGraph() ||
+        painter.activeDrawnGraph?.isLocked == true) {
       return;
     }
     var nextValue = painter.calculateMoveRawValue(position);
@@ -719,7 +722,10 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 编辑中的图形移动完成
   void _activeGraphMoveEnd(GraphPainter painter) {
-    if (painter.activeDrawnGraph == null) return;
+    if (painter.activeDrawnGraph == null ||
+        painter.activeDrawnGraph?.isLocked == true) {
+      return;
+    }
     painter.calculateDrawnGraphTime(painter.activeDrawnGraph);
     _currentPressValue = null;
     _pressAnchorIndex = null;
