@@ -9,6 +9,7 @@ import 'package:k_chart/renderer/dash_path.dart';
 import 'package:k_chart/renderer/index.dart';
 
 import '../entity/draw_graph_entity.dart';
+import '../entity/draw_graph_preset_styles.dart';
 import '../utils/distance_util.dart';
 
 class GraphPainter extends CustomPainter {
@@ -16,6 +17,7 @@ class GraphPainter extends CustomPainter {
     required this.stockPainter,
     required this.drawnGraphs,
     required this.timeInterval,
+    required this.preset,
   }) : _activeDrawnGraph =
             drawnGraphs.firstWhereOrNull((graph) => graph.isActive);
 
@@ -24,6 +26,9 @@ class GraphPainter extends CustomPainter {
 
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
+
+  /// 预设的绘制图形样式
+  final DrawGraphPresetStyles preset;
 
   Rect get mMainRect => stockPainter.mMainRect;
 
@@ -65,8 +70,8 @@ class GraphPainter extends CustomPainter {
     return Paint()
       ..style = PaintingStyle.stroke
       ..isAntiAlias = true
-      ..strokeWidth = style.lineWidth
-      ..color = style.strokeColor;
+      ..strokeWidth = style.lineWidthFromPreset(preset)
+      ..color = style.strokeColorFromPreset(preset);
   }
 
   /// 创建填充的Paint
@@ -74,7 +79,7 @@ class GraphPainter extends CustomPainter {
     return Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true
-      ..color = style.fillColor ?? Color(DrawnGraphStyle.placeholderColorValue);
+      ..color = style.fillColorFromPreset(preset);
   }
 
   /// 创建锚点的Paint
@@ -82,31 +87,33 @@ class GraphPainter extends CustomPainter {
     return Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true
-      ..color = style.strokeColor;
+      ..color = style.strokeColorFromPreset(preset);
   }
 
-  /// 根据锚点、样式，绘制图形的线条，例如线段
-  void _drawGraphLine(
+  /// 绘制线形图形的线条，例如线段
+  void _drawLineGraphStroke(
       Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
     final rawPath = Path()..addPolygon(points, false);
-    final path = style.dashArray == null
+    final dashedLine = style.dashedLineFromPreset(preset);
+    final path = dashedLine == null
         ? rawPath
-        : dashPath(rawPath, dashArray: CircularIntervalList(style.dashArray!));
+        : dashPath(rawPath, dashArray: CircularIntervalList(dashedLine));
     canvas.drawPath(path, _createStokePaint(style));
   }
 
-  /// 根据锚点、样式，绘制图形的描边，例如矩形
-  void _drawGraphStroke(
+  /// 绘制面形图形的描边，例如矩形
+  void _drawPlaneGraphStroke(
       Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
     final rawPath = Path()..addPolygon(points, true);
-    final path = style.dashArray == null
+    final dashedLine = style.dashedLineFromPreset(preset);
+    final path = dashedLine == null
         ? rawPath
-        : dashPath(rawPath, dashArray: CircularIntervalList(style.dashArray!));
+        : dashPath(rawPath, dashArray: CircularIntervalList(dashedLine));
     canvas.drawPath(path, _createStokePaint(style));
   }
 
-  /// 根据锚点、样式，绘制图形的填充，例如矩形
-  void _drawGraphFill(
+  /// 绘制面性图形的填充，例如矩形
+  void _drawPlaneGraphFill(
       Canvas canvas, List<Offset> points, DrawnGraphStyle style) {
     final path = Path()..addPolygon(points, true);
     canvas.drawPath(path, _createFillPaint(style));
@@ -152,7 +159,7 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 根据graphValue计算锚点坐标
-  Offset _getAnchorPoint(DrawGraphRawValue graphValue) {
+  Offset _getAnchorPoint(DrawGraphAnchor graphValue) {
     double dx = _translateIndexToX(graphValue.index!);
     double dy = stockPainter.getMainY(graphValue.price);
     return Offset(dx, dy);
@@ -184,7 +191,7 @@ class GraphPainter extends CustomPainter {
   void _drawSegmentLine(Canvas canvas, DrawnGraphEntity graph) {
     if (!_isGraphValid(graph, 2)) return;
     final points = _getAnchorPoints(graph);
-    _drawGraphLine(canvas, points, graph.style);
+    _drawLineGraphStroke(canvas, points, graph.style);
   }
 
   /// 绘制射线
@@ -204,7 +211,7 @@ class GraphPainter extends CustomPainter {
       // 端点在画布左侧
       endPoint = leftEdgePoint;
     }
-    _drawGraphLine(canvas, [p1, endPoint], graph.style);
+    _drawLineGraphStroke(canvas, [p1, endPoint], graph.style);
   }
 
   /// 绘制直线
@@ -215,7 +222,7 @@ class GraphPainter extends CustomPainter {
     var p2 = points.last;
     var leftEdgePoint = _getLeftEdgePoint(p1, p2);
     var rightEdgePoint = _getRightEdgePoint(p1, p2);
-    _drawGraphLine(canvas, [leftEdgePoint, rightEdgePoint], graph.style);
+    _drawLineGraphStroke(canvas, [leftEdgePoint, rightEdgePoint], graph.style);
   }
 
   /// 绘制矩形
@@ -225,8 +232,8 @@ class GraphPainter extends CustomPainter {
     final p1 = points[0];
     final p2 = points[1];
     final rectPoints = [p1, Offset(p2.dx, p1.dy), p2, Offset(p1.dx, p2.dy)];
-    _drawGraphStroke(canvas, rectPoints, graph.style);
-    _drawGraphFill(canvas, rectPoints, graph.style);
+    _drawPlaneGraphStroke(canvas, rectPoints, graph.style);
+    _drawPlaneGraphFill(canvas, rectPoints, graph.style);
   }
 
   /// 绘制平行线
@@ -236,20 +243,20 @@ class GraphPainter extends CustomPainter {
     final firstPoint = points[0];
     final secondPoint = points[1];
     // 绘制前两个点指示的直线
-    _drawGraphLine(canvas, [firstPoint, secondPoint], graph.style);
+    _drawLineGraphStroke(canvas, [firstPoint, secondPoint], graph.style);
     if (points.length != 4) return;
     final thirdPoint = points[2];
     final fourthPoint = points[3];
     // 第三个点指示的直线
-    _drawGraphLine(canvas, [thirdPoint, fourthPoint], graph.style);
-    _drawGraphFill(canvas, points, graph.style);
+    _drawLineGraphStroke(canvas, [thirdPoint, fourthPoint], graph.style);
+    _drawPlaneGraphFill(canvas, points, graph.style);
   }
 
   /// 绘制几浪
   void _drawWave(Canvas canvas, DrawnGraphEntity graph) {
     final points = _getAnchorPoints(graph);
     if (!_isGraphValid(graph, 2)) return;
-    _drawGraphLine(canvas, points, graph.style);
+    _drawLineGraphStroke(canvas, points, graph.style);
   }
 
   /// 直线和画板左侧的交点
@@ -297,11 +304,11 @@ class GraphPainter extends CustomPainter {
     final priceInBaseLine =
         firstValue.price + (thirdValue.index! - firstValue.index!) * tan;
     final diffPrice = thirdValue.price - priceInBaseLine;
-    final thirdPoint = _getAnchorPoint(DrawGraphRawValue(
+    final thirdPoint = _getAnchorPoint(DrawGraphAnchor(
       index: firstValue.index,
       price: firstValue.price + diffPrice,
     ));
-    final fourthPoint = _getAnchorPoint(DrawGraphRawValue(
+    final fourthPoint = _getAnchorPoint(DrawGraphAnchor(
       index: secondValue.index,
       price: secondValue.price + diffPrice,
     ));
@@ -310,17 +317,17 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 计算点击手势的点在k线图中对应的index和价格
-  DrawGraphRawValue? calculateTouchRawValue(Offset touchPoint) {
+  DrawGraphAnchor? calculateTouchRawValue(Offset touchPoint) {
     var index = stockPainter.getIndex(touchPoint.dx / scaleX - mTranslateX);
     var price = _getMainPrice(touchPoint.dy);
-    return DrawGraphRawValue(index: index, price: price);
+    return DrawGraphAnchor(index: index, price: price);
   }
 
   /// 全部锚点图形的最后一个的value
-  DrawGraphRawValue getLastAnchorGraphValue(
+  DrawGraphAnchor getLastAnchorGraphValue(
     DrawnGraphType drawType,
-    List<DrawGraphRawValue> values,
-    DrawGraphRawValue lastValue,
+    List<DrawGraphAnchor> values,
+    DrawGraphAnchor lastValue,
   ) {
     if (drawType == DrawnGraphType.hSegmentLine) {
       lastValue.price = values.first.price;
@@ -382,7 +389,7 @@ class GraphPainter extends CustomPainter {
   }
 
   /// 计算移动手势的点在k线图中对应的index和价格
-  DrawGraphRawValue calculateMoveRawValue(Offset movePoint) {
+  DrawGraphAnchor calculateMoveRawValue(Offset movePoint) {
     var index = stockPainter.getIndex(movePoint.dx / scaleX - mTranslateX);
     var dy = movePoint.dy;
     if (movePoint.dy < mMainRect.top) {
@@ -392,7 +399,7 @@ class GraphPainter extends CustomPainter {
       dy = mMainRect.bottom;
     }
     var price = _getMainPrice(dy);
-    return DrawGraphRawValue(index: index, price: price);
+    return DrawGraphAnchor(index: index, price: price);
   }
 
   /// 根据touch点，查找离它最近的图形
@@ -550,8 +557,8 @@ class GraphPainter extends CustomPainter {
 
   /// 移动手画图形。如果anchorIndex为null，移动整个图形；如果不为null，则移动单个锚点
   void moveActiveGraph(
-    DrawGraphRawValue currentValue,
-    DrawGraphRawValue nextValue,
+    DrawGraphAnchor currentValue,
+    DrawGraphAnchor nextValue,
     int? anchorIndex,
   ) {
     // 计算和上一个点的偏移
@@ -699,7 +706,7 @@ class GraphPainter extends CustomPainter {
 
   /// 点到各种形状的锚点的距离
   double _distanceToGraphAnchorPoint(
-      Offset touchPoint, DrawGraphRawValue anchorValue) {
+      Offset touchPoint, DrawGraphAnchor anchorValue) {
     var anchorPoint = Offset(_translateIndexToX(anchorValue.index!),
         stockPainter.getMainY(anchorValue.price));
     return DistanceUtil.distanceToPoint(touchPoint, anchorPoint);

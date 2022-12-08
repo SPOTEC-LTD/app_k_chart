@@ -7,6 +7,7 @@ import 'package:k_chart/flutter_k_chart.dart';
 import 'package:k_chart/renderer/graph_painter.dart';
 
 import 'entity/draw_graph_entity.dart';
+import 'entity/draw_graph_preset_styles.dart';
 
 enum MainState { MA, BOLL, NONE }
 
@@ -47,6 +48,9 @@ class KChartWidget extends StatefulWidget {
 
   /// 绘制图形的类型
   final DrawnGraphType? drawType;
+
+  /// 预设的绘制图形样式
+  final DrawGraphPresetStyles? presetDrawStyles;
 
   /// 绘制图形的样式
   final DrawnGraphStyle? drawStyle;
@@ -94,6 +98,7 @@ class KChartWidget extends StatefulWidget {
     this.chartController,
     this.enableDraw = false,
     this.drawType,
+    this.presetDrawStyles,
     this.drawStyle,
     this.outMainTap,
     this.drawGraphProgress,
@@ -132,7 +137,7 @@ class _KChartWidgetState extends State<KChartWidget>
   bool _isFinishingScale = false;
 
   /// 长按手势当前点的value值
-  DrawGraphRawValue? _currentPressValue;
+  DrawGraphAnchor? _currentPressValue;
 
   /// 选中锚点在DrawGraphEntity的value数组中的索引
   int? _pressAnchorIndex;
@@ -340,6 +345,7 @@ class _KChartWidgetState extends State<KChartWidget>
               ),
               if ((widget.datas != null && widget.datas!.isNotEmpty) &&
                   _chartController.showDrawnGraphs &&
+                  widget.presetDrawStyles != null &&
                   (_chartController.drawnGraphs.isNotEmpty ||
                       (widget.drawType != null && widget.drawStyle != null)))
                 _buildDrawGraphView(_stockPainter),
@@ -537,6 +543,7 @@ class _KChartWidgetState extends State<KChartWidget>
       stockPainter: stockPainter,
       drawnGraphs: _chartController.drawnGraphs,
       timeInterval: widget.timeInterval,
+      preset: widget.presetDrawStyles!,
     );
     final paint = CustomPaint(
       size: Size(double.infinity, double.infinity),
@@ -678,7 +685,7 @@ class _KChartWidgetState extends State<KChartWidget>
       widget.outMainTap?.call();
     } else {
       // 第二个点不会被绘制
-      final graphValue2 = DrawGraphRawValue(
+      final graphValue2 = DrawGraphAnchor(
         index: graphValue.index! + 5,
         price: graphValue.price,
       );

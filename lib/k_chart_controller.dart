@@ -64,11 +64,29 @@ class KChartController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateActiveGraph({DrawnGraphStyle? style, bool? locked}) {
+  /// 更新当前激活图形的样式
+  void updateActiveGraphStyle({
+    int? strokeColorIndex,
+    int? fillColorIndex,
+    int? lineWidthIndex,
+    int? dashedLineIndex,
+  }) {
     final active = activeGraph;
-    if (active == null || (style == null && locked == null)) return;
-    active.style = style ?? active.style;
-    active.isLocked = locked ?? active.isLocked;
+    if (active == null) return;
+    active.style = active.style.copyWith(
+      strokeColorIndex,
+      fillColorIndex,
+      lineWidthIndex,
+      dashedLineIndex,
+    );
+    notifyListeners();
+  }
+
+  /// 切换当前激活图形是否锁定的状态
+  void toggleActiveGraphLockState() {
+    final active = activeGraph;
+    if (active == null) return;
+    active.isLocked = !active.isLocked;
     notifyListeners();
   }
 

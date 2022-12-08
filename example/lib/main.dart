@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/entity/draw_graph_entity.dart';
+import 'package:k_chart/entity/draw_graph_preset_styles.dart';
 import 'package:k_chart/flutter_k_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -134,12 +135,8 @@ class _MyHomePageState extends State<MyHomePage> {
               chartController: _chartController,
               enableDraw: _enableDraw,
               drawType: _drawType,
-              drawStyle: DrawnGraphStyle(
-                strokeColor: Colors.yellow,
-                fillColor: Colors.red.withOpacity(0.2),
-                lineWidth: 1,
-                dashArray: [4, 4],
-              ),
+              presetDrawStyles: _createPreset(),
+              drawStyle: DrawnGraphStyle.placeholder(),
               isLine: isLine,
               onSecondaryTap: () {
                 print('Secondary Tap');
@@ -248,11 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _graphFinished(isFinished: true);
         }),
         button("Toggle Lock Active", onPressed: () {
-          if (_chartController.activeGraph == null) return;
-          final isLocked = _chartController.drawnGraphs
-              .firstWhere((e) => e.isActive)
-              .isLocked;
-          _chartController.updateActiveGraph(locked: !isLocked);
+          _chartController.toggleActiveGraphLockState();
           _graphFinished(isFinished: true);
         }),
         button("Time Mode", onPressed: () => isLine = true),
@@ -325,6 +318,33 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         backgroundColor: Colors.blue,
       ),
+    );
+  }
+
+  DrawGraphPresetStyles _createPreset() {
+    return DrawGraphPresetStyles(
+      stokeColors: [
+        Color(0xFFF34E6C),
+        Color(0xFFDA7D0F),
+        Color(0xFFF0E717),
+        Color(0xFF73E162),
+        Color(0xFF0FB5DA),
+        Color(0xFFDA54F0),
+      ],
+      fillColors: [
+        Color(0x66F34E6C),
+        Color(0x66DA7D0F),
+        Color(0x66F0E717),
+        Color(0x6673E162),
+        Color(0x660FB5DA),
+        Color(0x66DA54F0),
+      ],
+      dashedLines: [
+        null,
+        [2, 2],
+        [4, 4],
+      ],
+      lineWidths: [1, 2, 3],
     );
   }
 

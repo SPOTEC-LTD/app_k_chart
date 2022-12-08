@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:k_chart/entity/draw_graph_preset_styles.dart';
+
 enum DrawnGraphType {
   segmentLine,
   hSegmentLine,
@@ -41,7 +43,7 @@ extension DrawnGraphTypeExtension on DrawnGraphType {
 }
 
 /// 绘制图形的锚点
-class DrawGraphRawValue {
+class DrawGraphAnchor {
   /// 价格
   double price;
 
@@ -51,13 +53,13 @@ class DrawGraphRawValue {
   /// 时间戳
   int? time;
 
-  DrawGraphRawValue({
+  DrawGraphAnchor({
     required this.price,
     this.index,
     this.time,
   });
 
-  DrawGraphRawValue.fromMap(Map<String, dynamic> map)
+  DrawGraphAnchor.fromMap(Map<String, dynamic> map)
       : price = map['price'],
         index = map['index'],
         time = map['time'];
@@ -68,65 +70,93 @@ class DrawGraphRawValue {
 }
 
 class DrawnGraphStyle {
+  /// 保存的描边颜色index
+  final int strokeColorIndex;
+
+  /// 保存的填充颜色index
+  final int fillColorIndex;
+
+  /// 保存的线宽index
+  final int lineWidthIndex;
+
+  /// 保存的虚线样式index
+  final int dashedLineIndex;
+
   /// 描边颜色
-  final Color strokeColor;
+  Color strokeColorFromPreset(DrawGraphPresetStyles preset) {
+    if (strokeColorIndex > preset.stokeColors.length - 1) {
+      return preset.stokeColors.last;
+    } else {
+      return preset.stokeColors[strokeColorIndex];
+    }
+  }
 
   /// 填充颜色
-  final Color? fillColor;
+  Color fillColorFromPreset(DrawGraphPresetStyles preset) {
+    if (fillColorIndex > preset.fillColors.length - 1) {
+      return preset.fillColors.last;
+    } else {
+      return preset.fillColors[fillColorIndex];
+    }
+  }
 
   /// 线宽
-  final double lineWidth;
+  double lineWidthFromPreset(DrawGraphPresetStyles preset) {
+    if (lineWidthIndex > preset.lineWidths.length - 1) {
+      return preset.lineWidths.last;
+    } else {
+      return preset.lineWidths[lineWidthIndex];
+    }
+  }
 
-  /// 虚线实体、空白的宽度，不传默认为实线
-  final List<double>? dashArray;
+  /// 虚线样式
+  List<double>? dashedLineFromPreset(DrawGraphPresetStyles preset) {
+    if (dashedLineIndex > preset.dashedLines.length - 1) {
+      return preset.dashedLines.last;
+    } else {
+      return preset.dashedLines[dashedLineIndex];
+    }
+  }
 
-  /// 对于老版本不可自定义样式的，颜色需要有个默认值才不会解析失败
-  static const placeholderColorValue = 0xFF0FB5DA;
-
-  DrawnGraphStyle({
-    required this.strokeColor,
-    required this.fillColor,
-    required this.lineWidth,
-    this.dashArray,
+  const DrawnGraphStyle({
+    required this.strokeColorIndex,
+    required this.fillColorIndex,
+    required this.lineWidthIndex,
+    required this.dashedLineIndex,
   });
 
   DrawnGraphStyle.placeholder()
-      : strokeColor = Color(placeholderColorValue),
-        fillColor = Color(placeholderColorValue),
-        lineWidth = 1,
-        dashArray = null;
+      : strokeColorIndex = 0,
+        fillColorIndex = 0,
+        lineWidthIndex = 0,
+        dashedLineIndex = 0;
 
   DrawnGraphStyle.fromMap(Map<String, dynamic> map)
-      : strokeColor =
-            Color(map['strokeColor'] as int? ?? placeholderColorValue),
-        // 给默认值是因为兼容老版本没有该参数的情况
-        fillColor = Color(map['fillColor'] as int? ?? placeholderColorValue)
-            .withOpacity(0.2),
-        lineWidth = map['lineWidth'],
-        dashArray = map['dashArray'] == null
-            ? null
-            : List<double>.from(map['dashArray']);
+      : strokeColorIndex = map['strokeColorIndex'] ?? 0,
+        fillColorIndex = map['fillColorIndex'] ?? 0,
+        lineWidthIndex = map['lineWidthIndex'] ?? 0,
+        dashedLineIndex = map['dashedLineIndex'] ?? 0;
 
   Map<String, Object?> toMap() {
     return {
-      'strokeColor': strokeColor.value,
-      'fillColor': fillColor?.value,
-      'lineWidth': lineWidth,
-      'dashArray': dashArray,
+      'strokeColorIndex': strokeColorIndex,
+      'fillColorIndex': fillColorIndex,
+      'lineWidthIndex': lineWidthIndex,
+      'dashedLineIndex': dashedLineIndex,
     };
   }
 
   DrawnGraphStyle copyWith(
-    Color? strokeColor,
-    Color? fillColor,
-    double? lineWidth,
-    List<double>? dashArray,
+    int? strokeColorIndex,
+    int? fillColorIndex,
+    int? lineWidthIndex,
+    int? dashedLineIndex,
   ) {
     return DrawnGraphStyle(
-      strokeColor: strokeColor ?? this.strokeColor,
-      fillColor: fillColor ?? this.fillColor,
-      lineWidth: lineWidth ?? this.lineWidth,
-      dashArray: dashArray ?? this.dashArray,
+      strokeColorIndex: strokeColorIndex ?? this.strokeColorIndex,
+      fillColorIndex: fillColorIndex ?? this.fillColorIndex,
+      lineWidthIndex: lineWidthIndex ?? this.lineWidthIndex,
+      dashedLineIndex: dashedLineIndex ?? this.dashedLineIndex,
     );
   }
 }
@@ -140,7 +170,7 @@ class DrawnGraphEntity {
   DrawnGraphStyle style;
 
   /// 图形的各个锚点
-  List<DrawGraphRawValue> values;
+  List<DrawGraphAnchor> values;
 
   /// 图形是否可以移动
   bool isLocked;
@@ -168,7 +198,7 @@ class DrawnGraphEntity {
   DrawnGraphEntity.fromMap(Map<String, dynamic> map)
       : drawType = DrawnGraphTypeExtension.fromJson(map['drawType']),
         values = (map['values'] as List)
-            .map((e) => DrawGraphRawValue.fromMap(e))
+            .map((e) => DrawGraphAnchor.fromMap(e))
             .toList(),
         style = map['style'] == null
             ? DrawnGraphStyle.placeholder()
