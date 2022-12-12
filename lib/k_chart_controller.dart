@@ -21,17 +21,6 @@ class KChartController extends ChangeNotifier {
 
   List<DrawnGraphEntity> _drawnGraphs;
 
-  /// 是否显示绘制的图形
-  bool get showDrawnGraphs => _showDrawnGraphs;
-
-  /// 是否显示绘制的图形
-  set showDrawnGraphs(bool show) {
-    _showDrawnGraphs = show;
-    notifyListeners();
-  }
-
-  bool _showDrawnGraphs = true;
-
   /// 激活的图形
   DrawnGraphEntity? get activeGraph {
     for (var graph in _drawnGraphs) {

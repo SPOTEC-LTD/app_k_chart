@@ -55,6 +55,9 @@ class KChartWidget extends StatefulWidget {
   /// 绘制图形的样式
   final DrawnGraphStyle? drawStyle;
 
+  /// 是否显示绘制的图形
+  final bool showDrawnGraphs;
+
   /// 当前k线图的时间间隔。因为两个蜡烛之间的时间间隔可以不一致，无法作为绘图的基准，所以必须传入
   final int timeInterval;
 
@@ -98,6 +101,7 @@ class KChartWidget extends StatefulWidget {
     this.chartController,
     this.enableDraw = false,
     this.drawType,
+    this.showDrawnGraphs = true,
     this.presetDrawStyles,
     this.drawStyle,
     this.outMainTap,
@@ -344,7 +348,7 @@ class _KChartWidgetState extends State<KChartWidget>
                 painter: _stockPainter,
               ),
               if ((widget.datas != null && widget.datas!.isNotEmpty) &&
-                  _chartController.showDrawnGraphs &&
+                  widget.showDrawnGraphs &&
                   widget.presetDrawStyles != null &&
                   (_chartController.drawnGraphs.isNotEmpty ||
                       (widget.drawType != null && widget.drawStyle != null)))

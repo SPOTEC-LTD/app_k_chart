@@ -57,6 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
   ChartColors chartColors = ChartColors();
   final _chartController = KChartController();
   DrawnGraphType? _drawType;
+  var _showDrawnGraphs = true;
 
   @override
   void initState() {
@@ -135,6 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
               chartController: _chartController,
               enableDraw: _enableDraw,
               drawType: _drawType,
+              showDrawnGraphs: _showDrawnGraphs,
               presetDrawStyles: _createPreset(),
               drawStyle: DrawnGraphStyle.placeholder(),
               isLine: isLine,
@@ -197,10 +199,10 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Text('Show Graphs', style: TextStyle(color: Colors.white)),
             CupertinoSwitch(
-              value: _chartController.showDrawnGraphs,
+              value: _showDrawnGraphs,
               onChanged: (enable) {
                 setState(() {
-                  _chartController.showDrawnGraphs = enable;
+                  _showDrawnGraphs = enable;
                 });
               },
             ),
