@@ -203,7 +203,7 @@ class DrawnGraphEntity {
         style = map['style'] == null
             ? DrawnGraphStyle.placeholder()
             : DrawnGraphStyle.fromMap(map['style']),
-        isLocked = map['locked'] ?? false,
+        isLocked = map['isLocked'] ?? false,
         isActive = false;
 
   Map<String, Object?> toMap() {
@@ -211,7 +211,7 @@ class DrawnGraphEntity {
       'drawType': drawType.toJson(),
       'values': values.map((e) => e.toMap()).toList(),
       'style': style.toMap(),
-      'locked': isLocked,
+      'isLocked': isLocked,
       'isActive': false,
     };
   }
