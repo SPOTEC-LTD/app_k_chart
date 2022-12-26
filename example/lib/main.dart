@@ -41,7 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<DrawnGraphEntity>? _localGraphs;
   bool showLoading = true;
   bool _enableDraw = true;
-  MainState _mainState = MainState.MA;
+  MainState? _mainState;
   List<SecondaryState> _secondaryStates = [
     SecondaryState.CCI,
     SecondaryState.VOLUME,
@@ -256,7 +256,7 @@ class _MyHomePageState extends State<MyHomePage> {
         button("TrendLine", onPressed: () => _isTrendLine = !_isTrendLine),
         button("Line:MA", onPressed: () => _mainState = MainState.MA),
         button("Line:BOLL", onPressed: () => _mainState = MainState.BOLL),
-        button("Hide Line", onPressed: () => _mainState = MainState.NONE),
+        button("Hide Line", onPressed: () => _mainState = null),
         button("Secondary Chart:VOLUME",
             onPressed: () => _addSecondaryState(SecondaryState.VOLUME)),
         button("Secondary Chart:MACD",
