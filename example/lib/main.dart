@@ -42,8 +42,10 @@ class _MyHomePageState extends State<MyHomePage> {
   bool showLoading = true;
   bool _enableDraw = true;
   MainState _mainState = MainState.MA;
-  bool _volHidden = false;
-  SecondaryState _secondaryState = SecondaryState.MACD;
+  List<SecondaryState> _secondaryStates = [
+    SecondaryState.CCI,
+    SecondaryState.VOLUME,
+  ];
   bool isLine = true;
   bool _hideGrid = false;
   bool _showNowPrice = true;
@@ -145,8 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               isTrendLine: _isTrendLine,
               mainState: _mainState,
-              volHidden: _volHidden,
-              secondaryState: _secondaryState,
+              secondaryStates: _secondaryStates,
               fixedLength: 2,
               translations: kChartTranslations,
               showNowPrice: _showNowPrice,
@@ -256,20 +257,19 @@ class _MyHomePageState extends State<MyHomePage> {
         button("Line:MA", onPressed: () => _mainState = MainState.MA),
         button("Line:BOLL", onPressed: () => _mainState = MainState.BOLL),
         button("Hide Line", onPressed: () => _mainState = MainState.NONE),
+        button("Secondary Chart:VOLUME",
+            onPressed: () => _addSecondaryState(SecondaryState.VOLUME)),
         button("Secondary Chart:MACD",
-            onPressed: () => _secondaryState = SecondaryState.MACD),
+            onPressed: () => _addSecondaryState(SecondaryState.MACD)),
         button("Secondary Chart:KDJ",
-            onPressed: () => _secondaryState = SecondaryState.KDJ),
+            onPressed: () => _addSecondaryState(SecondaryState.KDJ)),
         button("Secondary Chart:RSI",
-            onPressed: () => _secondaryState = SecondaryState.RSI),
+            onPressed: () => _addSecondaryState(SecondaryState.RSI)),
         button("Secondary Chart:WR",
-            onPressed: () => _secondaryState = SecondaryState.WR),
+            onPressed: () => _addSecondaryState(SecondaryState.WR)),
         button("Secondary Chart:CCI",
-            onPressed: () => _secondaryState = SecondaryState.CCI),
-        button("Secondary Chart:Hide",
-            onPressed: () => _secondaryState = SecondaryState.NONE),
-        button(_volHidden ? "Show Vol" : "Hide Vol",
-            onPressed: () => _volHidden = !_volHidden),
+            onPressed: () => _addSecondaryState(SecondaryState.CCI)),
+        button("Secondary Chart:Hide", onPressed: () => _secondaryStates = []),
         button(_hideGrid ? "Show Grid" : "Hide Grid",
             onPressed: () => _hideGrid = !_hideGrid),
         button(_showNowPrice ? "Hide Now Price" : "Show Now Price",
@@ -451,5 +451,12 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _drawType = type;
     });
+  }
+
+  void _addSecondaryState(SecondaryState state) {
+    _secondaryStates.add(state);
+    if (_secondaryStates.length > 2) {
+      _secondaryStates.removeAt(0);
+    }
   }
 }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../entity/macd_entity.dart';
+import '../entity/k_line_entity.dart';
+import '../extension/num_ext.dart';
 import '../k_chart_widget.dart' show SecondaryState;
+import '../utils/number_util.dart';
 import 'base_chart_renderer.dart';
 
-class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
+class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   late double mMACDWidth;
+  late double mVolWidth;
   SecondaryState state;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
@@ -28,12 +31,19 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
           gridColor: chartColors.gridColor,
         ) {
     mMACDWidth = this.chartStyle.macdWidth;
+    mVolWidth = this.chartStyle.volWidth;
   }
 
+  double getVolY(double value) =>
+      (maxValue - value) * (chartRect.height / maxValue) + chartRect.top;
+
   @override
-  void drawChart(MACDEntity lastPoint, MACDEntity curPoint, double lastX,
+  void drawChart(KLineEntity lastPoint, KLineEntity curPoint, double lastX,
       double curX, Size size, Canvas canvas) {
     switch (state) {
+      case SecondaryState.VOLUME:
+        drawVolume(lastPoint, curPoint, lastX, curX, size, canvas);
+        break;
       case SecondaryState.MACD:
         drawMACD(curPoint, canvas, curX, lastPoint, lastX);
         break;
@@ -62,8 +72,33 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
     }
   }
 
-  void drawMACD(MACDEntity curPoint, Canvas canvas, double curX,
-      MACDEntity lastPoint, double lastX) {
+  void drawVolume(KLineEntity lastPoint, KLineEntity curPoint, double lastX,
+      double curX, Size size, Canvas canvas) {
+    double r = mVolWidth / 2;
+    double top = getVolY(curPoint.vol);
+    double bottom = chartRect.bottom;
+    if (curPoint.vol != 0) {
+      canvas.drawRect(
+          Rect.fromLTRB(curX - r, top, curX + r, bottom),
+          chartPaint
+            ..color = curPoint.close > curPoint.open
+                ? this.chartColors.upColor
+                : this.chartColors.dnColor);
+    }
+
+    if (lastPoint.MA5Volume != 0) {
+      drawLine(lastPoint.MA5Volume, curPoint.MA5Volume, canvas, lastX, curX,
+          this.chartColors.ma5Color);
+    }
+
+    if (lastPoint.MA10Volume != 0) {
+      drawLine(lastPoint.MA10Volume, curPoint.MA10Volume, canvas, lastX, curX,
+          this.chartColors.ma10Color);
+    }
+  }
+
+  void drawMACD(KLineEntity curPoint, Canvas canvas, double curX,
+      KLineEntity lastPoint, double lastX) {
     final macd = curPoint.macd ?? 0;
     double macdY = getY(macd);
     double r = mMACDWidth / 2;
@@ -86,9 +121,24 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
   }
 
   @override
-  void drawText(Canvas canvas, MACDEntity data, double x) {
+  void drawText(Canvas canvas, KLineEntity data, double x) {
     List<TextSpan>? children;
     switch (state) {
+      case SecondaryState.VOLUME:
+        children = [
+          TextSpan(
+              text: "VOL:${NumberUtil.format(data.vol)}    ",
+              style: getTextStyle(this.chartColors.volColor)),
+          if (data.MA5Volume.notNullOrZero)
+            TextSpan(
+                text: "MA5:${NumberUtil.format(data.MA5Volume!)}    ",
+                style: getTextStyle(this.chartColors.ma5Color)),
+          if (data.MA10Volume.notNullOrZero)
+            TextSpan(
+                text: "MA10:${NumberUtil.format(data.MA10Volume!)}    ",
+                style: getTextStyle(this.chartColors.ma10Color)),
+        ];
+        break;
       case SecondaryState.MACD:
         children = [
           TextSpan(
@@ -160,12 +210,21 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
 
   @override
   void drawVerticalText(canvas, textStyle, int gridRows) {
+    String maxText;
+    String minText;
+    if (state == SecondaryState.VOLUME) {
+      maxText = NumberUtil.format(maxValue);
+      minText = '';
+    } else {
+      maxText = format(maxValue);
+      minText = format(minValue);
+    }
     TextPainter maxTp = TextPainter(
-        text: TextSpan(text: "${format(maxValue)}", style: textStyle),
+        text: TextSpan(text: "$maxText", style: textStyle),
         textDirection: TextDirection.ltr);
     maxTp.layout();
     TextPainter minTp = TextPainter(
-        text: TextSpan(text: "${format(minValue)}", style: textStyle),
+        text: TextSpan(text: "$minText", style: textStyle),
         textDirection: TextDirection.ltr);
     minTp.layout();
 

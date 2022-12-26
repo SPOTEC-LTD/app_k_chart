@@ -11,13 +11,12 @@ import 'entity/draw_graph_preset_styles.dart';
 
 enum MainState { MA, BOLL, NONE }
 
-enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
+enum SecondaryState { VOLUME, MACD, KDJ, RSI, WR, CCI }
 
 class KChartWidget extends StatefulWidget {
   final List<KLineEntity>? datas;
   final MainState mainState;
-  final bool volHidden;
-  final SecondaryState secondaryState;
+  final List<SecondaryState> secondaryStates;
   final Function()? onSecondaryTap;
   final bool isLine;
   final bool isTapShowInfoDialog; //是否开启单击显示详情数据
@@ -80,9 +79,8 @@ class KChartWidget extends StatefulWidget {
     required this.timeInterval,
     required this.isTrendLine,
     this.mainState = MainState.MA,
-    this.secondaryState = SecondaryState.MACD,
+    this.secondaryStates = const [SecondaryState.VOLUME],
     this.onSecondaryTap,
-    this.volHidden = false,
     this.isLine = false,
     this.isTapShowInfoDialog = false,
     this.hideGrid = false,
@@ -199,8 +197,7 @@ class _KChartWidgetState extends State<KChartWidget>
       isOnTap: isOnTap,
       isTapShowInfoDialog: widget.isTapShowInfoDialog,
       mainState: widget.mainState,
-      volHidden: widget.volHidden,
-      secondaryState: widget.secondaryState,
+      secondaryStates: widget.secondaryStates,
       isLine: widget.isLine,
       hideGrid: widget.hideGrid,
       showNowPrice: widget.showNowPrice,
@@ -447,8 +444,7 @@ class _KChartWidgetState extends State<KChartWidget>
             entity.close.toStringAsFixed(widget.fixedLength),
             "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
             "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
-            if (widget.volHidden == false && entityAmount != null)
-              entityAmount.toInt().toString()
+            if (entityAmount != null) entityAmount.toInt().toString()
           ];
           final dialogPadding = widget.chartStyle.selectPadding ?? 5.0;
           final dialogWidth = widget.chartStyle.selectWidth ?? mWidth / 3;

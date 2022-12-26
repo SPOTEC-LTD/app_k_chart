@@ -16,9 +16,8 @@ abstract class BaseChartPainter extends CustomPainter {
   List<KLineEntity>? datas;
   MainState mainState;
 
-  SecondaryState secondaryState;
+  List<SecondaryState> secondaryStates;
 
-  bool volHidden;
   bool isTapShowInfoDialog;
   double scaleX = 1.0, scrollX = 0.0, selectX;
   bool isLongPress = false;
@@ -28,15 +27,14 @@ abstract class BaseChartPainter extends CustomPainter {
 
   //3块区域大小与位置
   late Rect mMainRect;
-  Rect? mVolRect, mSecondaryRect;
+  List<Rect> mSecondaryRects = [];
   late double mDisplayHeight, mWidth;
   double mTopPadding = 30.0, mBottomPadding = 20.0, mChildPadding = 12.0;
   int mGridRows = 4, mGridColumns = 4;
   int mStartIndex = 0, mStopIndex = 0;
   double mMainMaxValue = double.minPositive, mMainMinValue = double.maxFinite;
-  double mVolMaxValue = double.minPositive, mVolMinValue = double.maxFinite;
-  double mSecondaryMaxValue = double.minPositive,
-      mSecondaryMinValue = double.maxFinite;
+  List<double> mSecondaryMaxValues = [];
+  List<double> mSecondaryMinValues = [];
   double mTranslateX = double.minPositive;
   int mMainMaxIndex = 0, mMainMinIndex = 0;
   double mMainHighMaxValue = double.minPositive,
@@ -57,9 +55,8 @@ abstract class BaseChartPainter extends CustomPainter {
     required this.dateTimeFormat,
     this.isOnTap = false,
     this.mainState = MainState.MA,
-    this.volHidden = false,
     this.isTapShowInfoDialog = false,
-    this.secondaryState = SecondaryState.MACD,
+    this.secondaryStates = const [SecondaryState.VOLUME],
     this.isLine = false,
   }) {
     mItemCount = datas?.length ?? 0;
@@ -135,28 +132,22 @@ abstract class BaseChartPainter extends CustomPainter {
   void drawCrossLineText(Canvas canvas, Size size);
 
   void initRect(Size size) {
-    double volHeight = volHidden != true ? mDisplayHeight * 0.2 : 0;
-    double secondaryHeight =
-        secondaryState != SecondaryState.NONE ? mDisplayHeight * 0.2 : 0;
+    double secondaryHeight = mDisplayHeight * 0.2;
 
     double mainHeight = mDisplayHeight;
-    mainHeight -= volHeight;
-    mainHeight -= secondaryHeight;
+    mainHeight -= secondaryHeight * secondaryStates.length;
 
     mMainRect = Rect.fromLTRB(0, mTopPadding, mWidth, mTopPadding + mainHeight);
 
-    if (volHidden != true) {
-      mVolRect = Rect.fromLTRB(0, mMainRect.bottom + mChildPadding, mWidth,
-          mMainRect.bottom + volHeight);
-    }
-
-    //secondaryState == SecondaryState.NONE隐藏副视图
-    if (secondaryState != SecondaryState.NONE) {
-      mSecondaryRect = Rect.fromLTRB(
-          0,
-          mMainRect.bottom + volHeight + mChildPadding,
-          mWidth,
-          mMainRect.bottom + volHeight + secondaryHeight);
+    mSecondaryRects.clear();
+    for (int i = 0; i < secondaryStates.length; i++) {
+      final rect = Rect.fromLTRB(
+        0,
+        mMainRect.bottom + mChildPadding + secondaryHeight * i,
+        mWidth,
+        mMainRect.bottom + secondaryHeight * (i + 1),
+      );
+      mSecondaryRects.add(rect);
     }
   }
 
@@ -167,11 +158,15 @@ abstract class BaseChartPainter extends CustomPainter {
     setTranslateXFromScrollX(scrollX);
     mStartIndex = indexOfTranslateX(xToTranslateX(0));
     mStopIndex = indexOfTranslateX(xToTranslateX(mWidth));
+    mSecondaryMaxValues =
+        secondaryStates.map((e) => double.minPositive).toList();
+    mSecondaryMinValues = secondaryStates.map((e) => double.maxFinite).toList();
     for (int i = mStartIndex; i <= mStopIndex; i++) {
       var item = datas![i];
       getMainMaxMinValue(item, i);
-      getVolMaxMinValue(item);
-      getSecondaryMaxMinValue(item);
+      for (int j = 0; j < secondaryStates.length; j++) {
+        getSecondaryMaxMinValue(item, j);
+      }
     }
   }
 
@@ -221,15 +216,16 @@ abstract class BaseChartPainter extends CustomPainter {
     return result;
   }
 
-  void getVolMaxMinValue(KLineEntity item) {
-    mVolMaxValue = max(mVolMaxValue,
-        max(item.vol, max(item.MA5Volume ?? 0, item.MA10Volume ?? 0)));
-    mVolMinValue = min(mVolMinValue,
-        min(item.vol, min(item.MA5Volume ?? 0, item.MA10Volume ?? 0)));
-  }
-
-  void getSecondaryMaxMinValue(KLineEntity item) {
-    if (secondaryState == SecondaryState.MACD) {
+  void getSecondaryMaxMinValue(KLineEntity item, int index) {
+    final secondaryState = secondaryStates[index];
+    double mSecondaryMaxValue = mSecondaryMaxValues[index];
+    double mSecondaryMinValue = mSecondaryMinValues[index];
+    if (secondaryState == SecondaryState.VOLUME) {
+      mSecondaryMaxValue = max(mSecondaryMaxValue,
+          max(item.vol, max(item.MA5Volume ?? 0, item.MA10Volume ?? 0)));
+      mSecondaryMinValue = min(mSecondaryMinValue,
+          min(item.vol, min(item.MA5Volume ?? 0, item.MA10Volume ?? 0)));
+    } else if (secondaryState == SecondaryState.MACD) {
       if (item.macd != null) {
         mSecondaryMaxValue =
             max(mSecondaryMaxValue, max(item.macd!, max(item.dif!, item.dea!)));
@@ -260,6 +256,8 @@ abstract class BaseChartPainter extends CustomPainter {
       mSecondaryMaxValue = 0;
       mSecondaryMinValue = 0;
     }
+    mSecondaryMaxValues[index] = mSecondaryMaxValue;
+    mSecondaryMinValues[index] = mSecondaryMinValue;
   }
 
   double xToTranslateX(double x) => -mTranslateX + x / scaleX;
