@@ -68,6 +68,9 @@ abstract class BaseChartPainter extends CustomPainter {
     mGridColumns = this.chartStyle.gridColumns;
     mDataLen = mItemCount * mPointWidth;
     mFormats = dateTimeFormat;
+    mSecondaryMaxValues =
+        secondaryStates.map((e) => double.minPositive).toList();
+    mSecondaryMinValues = secondaryStates.map((e) => double.maxFinite).toList();
   }
 
   @override

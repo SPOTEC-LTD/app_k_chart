@@ -205,7 +205,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         text: TextSpan(children: children ?? []),
         textDirection: TextDirection.ltr);
     tp.layout();
-    tp.paint(canvas, Offset(x, chartRect.top - topPadding));
+    tp.paint(canvas, Offset(x, chartRect.top - tp.height));
   }
 
   @override
@@ -229,7 +229,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     minTp.layout();
 
     maxTp.paint(canvas,
-        Offset(chartRect.width - maxTp.width, chartRect.top - topPadding));
+        Offset(chartRect.width - maxTp.width, chartRect.top - maxTp.height));
     minTp.paint(canvas,
         Offset(chartRect.width - minTp.width, chartRect.bottom - minTp.height));
   }

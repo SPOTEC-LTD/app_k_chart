@@ -114,8 +114,6 @@ class ChartPainter extends BaseChartPainter {
       verticalTextAlignment,
       maDayList,
     );
-    // datas为空时，mSecondaryMaxValues数组还未初始化
-    if (mSecondaryMaxValues.isEmpty) return;
     mSecondaryRenderers.clear();
     for (int i = 0; i < mSecondaryRects.length; i++) {
       final mSecondaryRect = mSecondaryRects[i];
