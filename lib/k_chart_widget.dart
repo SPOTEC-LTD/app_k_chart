@@ -444,6 +444,7 @@ class _KChartWidgetState extends State<KChartWidget>
             entity.close.toStringAsFixed(widget.fixedLength),
             "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
             "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
+            NumberUtil.format(entity.vol),
             if (entityAmount != null) entityAmount.toInt().toString()
           ];
           final dialogPadding = widget.chartStyle.selectPadding ?? 5.0;

@@ -6,6 +6,7 @@ class ChartTranslations {
   final String close;
   final String changeAmount;
   final String change;
+  final String volume;
   final String amount;
 
   const ChartTranslations({
@@ -16,6 +17,7 @@ class ChartTranslations {
     this.close = 'Close',
     this.changeAmount = 'Change',
     this.change = 'Change%',
+    this.volume = 'Volume',
     this.amount = 'Amount',
   });
 
@@ -36,6 +38,8 @@ class ChartTranslations {
       case 6:
         return change;
       case 7:
+        return volume;
+      case 8:
         return amount;
     }
 
@@ -51,5 +55,6 @@ const kChartTranslations = ChartTranslations(
   close: '收',
   changeAmount: '涨跌额',
   change: '涨跌幅',
+  volume: '成交量',
   amount: '成交额',
 );
