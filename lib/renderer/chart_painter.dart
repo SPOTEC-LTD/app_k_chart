@@ -62,7 +62,7 @@ class ChartPainter extends BaseChartPainter {
     isOnTap,
     isTapShowInfoDialog,
     required this.verticalTextAlignment,
-    MainState? mainState,
+    MainState mainState = MainState.MA,
     volHidden,
     List<SecondaryState> secondaryStates = const [SecondaryState.VOLUME],
     this.sink,

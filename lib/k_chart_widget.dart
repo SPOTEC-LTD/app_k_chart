@@ -9,13 +9,13 @@ import 'package:k_chart/renderer/graph_painter.dart';
 import 'entity/draw_graph_entity.dart';
 import 'entity/draw_graph_preset_styles.dart';
 
-enum MainState { MA, BOLL }
+enum MainState { NONE, MA, BOLL }
 
-enum SecondaryState { VOLUME, MACD, KDJ, RSI, WR, CCI }
+enum SecondaryState { NONE, VOLUME, MACD, KDJ, RSI, WR, CCI }
 
 class KChartWidget extends StatefulWidget {
   final List<KLineEntity>? datas;
-  final MainState? mainState;
+  final MainState mainState;
   final List<SecondaryState> secondaryStates;
   final Function()? onSecondaryTap;
   final bool isLine;
@@ -78,7 +78,7 @@ class KChartWidget extends StatefulWidget {
     this.chartColors, {
     required this.timeInterval,
     required this.isTrendLine,
-    this.mainState,
+    this.mainState = MainState.MA,
     this.secondaryStates = const [SecondaryState.VOLUME],
     this.onSecondaryTap,
     this.isLine = false,
@@ -180,6 +180,8 @@ class _KChartWidgetState extends State<KChartWidget>
       mScrollX = mSelectX = 0.0;
       mScaleX = 1.0;
     }
+    final secondaryStates = [...widget.secondaryStates];
+    secondaryStates.removeWhere((e) => e == SecondaryState.NONE);
     final _stockPainter = ChartPainter(
       widget.chartStyle,
       widget.chartColors,
@@ -197,7 +199,7 @@ class _KChartWidgetState extends State<KChartWidget>
       isOnTap: isOnTap,
       isTapShowInfoDialog: widget.isTapShowInfoDialog,
       mainState: widget.mainState,
-      secondaryStates: widget.secondaryStates,
+      secondaryStates: secondaryStates,
       isLine: widget.isLine,
       hideGrid: widget.hideGrid,
       showNowPrice: widget.showNowPrice,

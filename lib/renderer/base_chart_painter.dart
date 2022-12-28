@@ -14,7 +14,7 @@ export 'package:flutter/material.dart'
 abstract class BaseChartPainter extends CustomPainter {
   static double maxScrollX = 0.0;
   List<KLineEntity>? datas;
-  MainState? mainState;
+  MainState mainState;
 
   List<SecondaryState> secondaryStates;
 
@@ -54,7 +54,7 @@ abstract class BaseChartPainter extends CustomPainter {
     required this.selectX,
     required this.dateTimeFormat,
     this.isOnTap = false,
-    this.mainState,
+    this.mainState = MainState.MA,
     this.isTapShowInfoDialog = false,
     this.secondaryStates = const [SecondaryState.VOLUME],
     this.isLine = false,

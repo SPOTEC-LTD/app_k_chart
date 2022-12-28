@@ -14,7 +14,7 @@ double? trendLineContentRec;
 class MainRenderer extends BaseChartRenderer<CandleEntity> {
   late double mCandleWidth;
   late double mCandleLineWidth;
-  MainState? state;
+  MainState state;
   bool isLine;
 
   //绘制的内容区域
