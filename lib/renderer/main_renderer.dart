@@ -241,17 +241,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
 
   @override
   void drawVerticalText(canvas, textStyle, int gridRows) {
-    double rowSpace = _contentRect.height / gridRows;
+    double rowSpace = chartRect.height / gridRows;
+    final bottomValue = getPrice(chartRect.bottom);
     for (var i = 0; i <= gridRows; ++i) {
-      double value;
-      // 避免第一个和最后一个计算丢失精度
-      if (i == 0) {
-        value = maxValue;
-      } else if (i == gridRows) {
-        value = minValue;
-      } else {
-        value = (gridRows - i) * rowSpace / scaleY + minValue;
-      }
+      double value = (gridRows - i) * rowSpace / scaleY + bottomValue;
       TextSpan span = TextSpan(text: "${format(value)}", style: textStyle);
       TextPainter tp =
           TextPainter(text: span, textDirection: TextDirection.ltr);
@@ -268,10 +261,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       }
 
       if (i == 0) {
-        tp.paint(canvas, Offset(offsetX, _contentRect.top - tp.height / 2));
+        tp.paint(canvas, Offset(offsetX, chartRect.top - tp.height));
       } else {
-        tp.paint(canvas,
-            Offset(offsetX, rowSpace * i + _contentRect.top - tp.height / 2));
+        tp.paint(
+            canvas, Offset(offsetX, rowSpace * i + chartRect.top - tp.height));
       }
     }
   }
@@ -286,7 +279,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     }
     double columnSpace = chartRect.width / gridColumns;
     for (int i = 1; i < gridColumns; i++) {
-      canvas.drawLine(Offset(columnSpace * i, topPadding / 3),
+      canvas.drawLine(Offset(columnSpace * i, topPadding),
           Offset(columnSpace * i, chartRect.bottom), gridPaint);
     }
   }

@@ -201,9 +201,7 @@ class ChartPainter extends BaseChartPainter {
   @override
   void drawVerticalText(canvas) {
     var textStyle = getTextStyle(this.chartColors.defaultTextColor);
-    if (!hideGrid) {
-      mMainRenderer.drawVerticalText(canvas, textStyle, mGridRows);
-    }
+    mMainRenderer.drawVerticalText(canvas, textStyle, mGridRows);
     mSecondaryRenderers.forEach((render) {
       render.drawVerticalText(canvas, textStyle, mGridRows);
     });
