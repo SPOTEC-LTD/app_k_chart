@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../entity/info_window_entity.dart';
 import '../entity/k_line_entity.dart';
+import '../indicator_setting.dart';
 import '../k_chart_widget.dart';
 import '../utils/date_format_util.dart';
 import 'base_chart_painter.dart';
@@ -40,7 +41,7 @@ class ChartPainter extends BaseChartPainter {
   Color? volColor;
   Color? macdColor, difColor, deaColor, jColor;
   int fixedLength;
-  List<int> maDayList;
+  final IndicatorSetting indicatorSetting;
   final ChartColors chartColors;
   late Paint selectPointPaint, selectorBorderPaint, nowPricePaint;
   final ChartStyle chartStyle;
@@ -70,7 +71,7 @@ class ChartPainter extends BaseChartPainter {
     this.hideGrid = false,
     this.showNowPrice = true,
     this.fixedLength = 2,
-    this.maDayList = const [5, 10, 20],
+    this.indicatorSetting = const IndicatorSetting(),
     required List<String> dateTimeFormat,
   }) : super(chartStyle,
             datas: datas,
@@ -112,7 +113,8 @@ class ChartPainter extends BaseChartPainter {
       this.chartColors,
       this.scaleX,
       verticalTextAlignment,
-      maDayList,
+      indicatorSetting.maDayList,
+      indicatorSetting.emaDayList,
     );
     mSecondaryRenderers.clear();
     for (int i = 0; i < mSecondaryRects.length; i++) {

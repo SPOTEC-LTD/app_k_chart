@@ -1,12 +1,17 @@
 import 'dart:math';
 
+import 'package:k_chart/indicator_setting.dart';
+
 import '../entity/index.dart';
 
 class DataUtil {
-  static calculate(List<KLineEntity> dataList,
-      [List<int> maDayList = const [5, 10, 20], int n = 20, k = 2]) {
-    calcMA(dataList, maDayList);
-    calcBOLL(dataList, n, k);
+  static calculate(
+    List<KLineEntity> dataList, {
+    IndicatorSetting setting = const IndicatorSetting(),
+  }) {
+    calcMA(dataList, setting.maDayList);
+    calcEMA(dataList, setting.emaDayList);
+    calcBOLL(dataList, setting.bollSetting.n, setting.bollSetting.k);
     calcVolumeMA(dataList);
     calcKDJ(dataList);
     calcMACD(dataList);
@@ -25,14 +30,55 @@ class DataUtil {
         entity.maValueList = List<double>.filled(maDayList.length, 0);
 
         for (int j = 0; j < maDayList.length; j++) {
+          final day = maDayList[j];
+          // 先加
           ma[j] += closePrice;
-          if (i == maDayList[j] - 1) {
-            entity.maValueList?[j] = ma[j] / maDayList[j];
-          } else if (i >= maDayList[j]) {
-            ma[j] -= dataList[i - maDayList[j]].close;
-            entity.maValueList?[j] = ma[j] / maDayList[j];
+          if (i == day - 1) {
+            entity.maValueList?[j] = ma[j] / day;
+          } else if (i >= day) {
+            // 后减
+            ma[j] -= dataList[i - day].close;
+            entity.maValueList?[j] = ma[j] / day;
           } else {
             entity.maValueList?[j] = 0;
+          }
+        }
+      }
+    }
+  }
+
+  static calcEMA(List<KLineEntity> dataList, List<int> maDayList) {
+    // 将指定天数之前的ema值设置为0
+    void removeValueBeforeDay(int dayIndex) {
+      final day = maDayList[dayIndex];
+      for (int i = 0; i < dataList.length; i++) {
+        if (i >= day - 1) return;
+        KLineEntity entity = dataList[i];
+        entity.emaValueList?[dayIndex] = 0;
+      }
+    }
+
+    List<double> preEmaValues =
+        List<double>.filled(maDayList.length, dataList.first.close);
+    if (dataList.isNotEmpty) {
+      for (int i = 0; i < dataList.length; i++) {
+        KLineEntity entity = dataList[i];
+        final closePrice = entity.close;
+        entity.emaValueList = List<double>.filled(maDayList.length, 0);
+
+        for (int j = 0; j < maDayList.length; j++) {
+          final day = maDayList[j];
+          final factor = 2 / (day + 1);
+          final preEmaValue = preEmaValues[j];
+          if (i == 0) {
+            entity.emaValueList?[j] = preEmaValue;
+          } else {
+            final ema = factor * (closePrice - preEmaValue) + preEmaValue;
+            entity.emaValueList?[j] = ema;
+            preEmaValues[j] = ema;
+            if (i == day) {
+              removeValueBeforeDay(j);
+            }
           }
         }
       }

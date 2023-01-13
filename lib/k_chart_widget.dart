@@ -4,12 +4,13 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/flutter_k_chart.dart';
+import 'package:k_chart/indicator_setting.dart';
 import 'package:k_chart/renderer/graph_painter.dart';
 
 import 'entity/draw_graph_entity.dart';
 import 'entity/draw_graph_preset_styles.dart';
 
-enum MainState { NONE, MA, BOLL }
+enum MainState { NONE, MA, EMA, BOLL }
 
 enum SecondaryState { NONE, VOLUME, MACD, KDJ, RSI, WR, CCI }
 
@@ -30,7 +31,7 @@ class KChartWidget extends StatefulWidget {
   final Function(bool)? onLoadMore;
 
   final int fixedLength;
-  final List<int> maDayList;
+  final IndicatorSetting indicatorSetting;
   final int flingTime;
   final double flingRatio;
   final Curve flingCurve;
@@ -90,7 +91,7 @@ class KChartWidget extends StatefulWidget {
     this.translations = kChartTranslations,
     this.onLoadMore,
     this.fixedLength = 2,
-    this.maDayList = const [5, 10, 20],
+    this.indicatorSetting = const IndicatorSetting(),
     this.flingTime = 600,
     this.flingRatio = 0.5,
     this.flingCurve = Curves.decelerate,
@@ -205,7 +206,7 @@ class _KChartWidgetState extends State<KChartWidget>
       showNowPrice: widget.showNowPrice,
       sink: mInfoWindowStream?.sink,
       fixedLength: widget.fixedLength,
-      maDayList: widget.maDayList,
+      indicatorSetting: widget.indicatorSetting,
       verticalTextAlignment: widget.verticalTextAlignment,
       dateTimeFormat: gerRealDateTimeFormat(),
     );

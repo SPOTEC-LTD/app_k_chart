@@ -20,6 +20,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   //绘制的内容区域
   late Rect _contentRect;
   List<int> maDayList;
+  List<int> emaDayList;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
   final double mLineStrokeWidth = 1.0;
@@ -28,19 +29,20 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   final VerticalTextAlignment verticalTextAlignment;
 
   MainRenderer(
-      Rect mainRect,
-      double maxValue,
-      double minValue,
-      double topPadding,
-      this.state,
-      this.isLine,
-      int fixedLength,
-      this.chartStyle,
-      this.chartColors,
-      this.scaleX,
-      this.verticalTextAlignment,
-      [this.maDayList = const [5, 10, 20]])
-      : super(
+    Rect mainRect,
+    double maxValue,
+    double minValue,
+    double topPadding,
+    this.state,
+    this.isLine,
+    int fixedLength,
+    this.chartStyle,
+    this.chartColors,
+    this.scaleX,
+    this.verticalTextAlignment, [
+    this.maDayList = const [5, 10, 30],
+    this.emaDayList = const [5, 10, 30],
+  ]) : super(
             chartRect: mainRect,
             maxValue: maxValue,
             minValue: minValue,
@@ -74,28 +76,38 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       span = TextSpan(
         children: _createMATextSpan(data),
       );
+    } else if (state == MainState.EMA) {
+      span = TextSpan(
+        children: _createEMATextSpan(data),
+      );
     } else if (state == MainState.BOLL) {
       span = TextSpan(
         children: [
           if (data.up != 0)
             TextSpan(
                 text: "BOLL:${format(data.mb)}    ",
-                style: getTextStyle(this.chartColors.ma5Color)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.mb != 0)
             TextSpan(
                 text: "UB:${format(data.up)}    ",
-                style: getTextStyle(this.chartColors.ma10Color)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.dn != 0)
             TextSpan(
                 text: "LB:${format(data.dn)}    ",
-                style: getTextStyle(this.chartColors.ma30Color)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
         ],
       );
     }
     if (span == null) return;
-    TextPainter tp = TextPainter(text: span, textDirection: TextDirection.ltr);
-    tp.layout();
-    tp.paint(canvas, Offset(x, chartRect.top - topPadding));
+    TextPainter tp =
+        TextPainter(text: span, textDirection: TextDirection.ltr, maxLines: 2);
+    tp.layout(maxWidth: chartRect.width);
+    // 一行的时候，往下移动一点，看是来没那么高。一行大概高12
+    if (tp.height < 20) {
+      tp.paint(canvas, Offset(x, chartRect.top - topPadding + 5));
+    } else {
+      tp.paint(canvas, Offset(x, chartRect.top - topPadding));
+    }
   }
 
   List<InlineSpan> _createMATextSpan(CandleEntity data) {
@@ -104,7 +116,20 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       if (data.maValueList?[i] != 0) {
         var item = TextSpan(
             text: "MA${maDayList[i]}:${format(data.maValueList![i])}    ",
-            style: getTextStyle(this.chartColors.getMAColor(i)));
+            style: getTextStyle(this.chartColors.getIndicatorColor(i)));
+        result.add(item);
+      }
+    }
+    return result;
+  }
+
+  List<InlineSpan> _createEMATextSpan(CandleEntity data) {
+    List<InlineSpan> result = [];
+    for (int i = 0; i < (data.emaValueList?.length ?? 0); i++) {
+      if (data.emaValueList?[i] != 0) {
+        var item = TextSpan(
+            text: "EMA${emaDayList[i]}:${format(data.emaValueList![i])}    ",
+            style: getTextStyle(this.chartColors.getIndicatorColor(i)));
         result.add(item);
       }
     }
@@ -120,6 +145,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       drawCandle(curPoint, canvas, curX);
       if (state == MainState.MA) {
         drawMaLine(lastPoint, curPoint, canvas, lastX, curX);
+      } else if (state == MainState.EMA) {
+        drawEmaLine(lastPoint, curPoint, canvas, lastX, curX);
       } else if (state == MainState.BOLL) {
         drawBollLine(lastPoint, curPoint, canvas, lastX, curX);
       }
@@ -183,12 +210,19 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   void drawMaLine(CandleEntity lastPoint, CandleEntity curPoint, Canvas canvas,
       double lastX, double curX) {
     for (int i = 0; i < (curPoint.maValueList?.length ?? 0); i++) {
-      if (i == 3) {
-        break;
-      }
       if (lastPoint.maValueList?[i] != 0) {
         drawLine(lastPoint.maValueList?[i], curPoint.maValueList?[i], canvas,
-            lastX, curX, this.chartColors.getMAColor(i));
+            lastX, curX, this.chartColors.getIndicatorColor(i));
+      }
+    }
+  }
+
+  void drawEmaLine(CandleEntity lastPoint, CandleEntity curPoint, Canvas canvas,
+      double lastX, double curX) {
+    for (int i = 0; i < (curPoint.emaValueList?.length ?? 0); i++) {
+      if (lastPoint.emaValueList?[i] != 0) {
+        drawLine(lastPoint.emaValueList?[i], curPoint.emaValueList?[i], canvas,
+            lastX, curX, this.chartColors.getIndicatorColor(i));
       }
     }
   }
@@ -197,15 +231,15 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       Canvas canvas, double lastX, double curX) {
     if (lastPoint.up != 0) {
       drawLine(lastPoint.up, curPoint.up, canvas, lastX, curX,
-          this.chartColors.ma10Color);
+          this.chartColors.getIndicatorColor(0));
     }
     if (lastPoint.mb != 0) {
       drawLine(lastPoint.mb, curPoint.mb, canvas, lastX, curX,
-          this.chartColors.ma5Color);
+          this.chartColors.getIndicatorColor(1));
     }
     if (lastPoint.dn != 0) {
       drawLine(lastPoint.dn, curPoint.dn, canvas, lastX, curX,
-          this.chartColors.ma30Color);
+          this.chartColors.getIndicatorColor(2));
     }
   }
 

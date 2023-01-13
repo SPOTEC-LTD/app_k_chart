@@ -88,12 +88,12 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
 
     if (lastPoint.MA5Volume != 0) {
       drawLine(lastPoint.MA5Volume, curPoint.MA5Volume, canvas, lastX, curX,
-          this.chartColors.ma5Color);
+          this.chartColors.getIndicatorColor(0));
     }
 
     if (lastPoint.MA10Volume != 0) {
       drawLine(lastPoint.MA10Volume, curPoint.MA10Volume, canvas, lastX, curX,
-          this.chartColors.ma10Color);
+          this.chartColors.getIndicatorColor(1));
     }
   }
 
@@ -132,11 +132,11 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
           if (data.MA5Volume.notNullOrZero)
             TextSpan(
                 text: "MA5:${NumberUtil.format(data.MA5Volume!)}    ",
-                style: getTextStyle(this.chartColors.ma5Color)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.MA10Volume.notNullOrZero)
             TextSpan(
                 text: "MA10:${NumberUtil.format(data.MA10Volume!)}    ",
-                style: getTextStyle(this.chartColors.ma10Color)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
         ];
         break;
       case SecondaryState.MACD:

@@ -8,6 +8,7 @@ import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/entity/draw_graph_entity.dart';
 import 'package:k_chart/entity/draw_graph_preset_styles.dart';
 import 'package:k_chart/flutter_k_chart.dart';
+import 'package:k_chart/indicator_setting.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
@@ -56,10 +57,15 @@ class _MyHomePageState extends State<MyHomePage> {
   VerticalTextAlignment _verticalTextAlignment = VerticalTextAlignment.left;
 
   ChartStyle chartStyle = ChartStyle();
-  ChartColors chartColors = ChartColors();
+  ChartColors chartColors = ChartColors()..indicatorColors = [Colors.red];
   final _chartController = KChartController();
   DrawnGraphType? _drawType;
   var _showDrawnGraphs = true;
+  var _indicatorSetting = IndicatorSetting(
+    maDayList: [5, 10, 30, 60, 120],
+    emaDayList: [5, 10, 30, 60],
+    bollSetting: BollSetting(n: 30, k: 2),
+  );
 
   @override
   void initState() {
@@ -154,7 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
               hideGrid: _hideGrid,
               isTapShowInfoDialog: false,
               verticalTextAlignment: _verticalTextAlignment,
-              maDayList: [1, 100, 1000],
+              indicatorSetting: _indicatorSetting,
               drawGraphProgress: (isFinished) =>
                   _graphFinished(isFinished: isFinished),
               moveFinished: () => _graphFinished(isFinished: true),
@@ -255,6 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
         button("K Line Mode", onPressed: () => isLine = false),
         button("TrendLine", onPressed: () => _isTrendLine = !_isTrendLine),
         button("Line:MA", onPressed: () => _mainState = MainState.MA),
+        button("Line:EMA", onPressed: () => _mainState = MainState.EMA),
         button("Line:BOLL", onPressed: () => _mainState = MainState.BOLL),
         button("Hide Line", onPressed: () => _mainState = MainState.NONE),
         button("Secondary Chart:VOLUME",
@@ -393,7 +400,7 @@ class _MyHomePageState extends State<MyHomePage> {
         .reversed
         .toList()
         .cast<KLineEntity>();
-    DataUtil.calculate(datas!);
+    DataUtil.calculate(datas!, setting: _indicatorSetting);
     showLoading = false;
 
     _localGraphs?.forEach((graph) {

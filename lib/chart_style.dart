@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 
+const _defaultIndicatorColors = [
+  Color(0xFFF856A7),
+  Color(0xFF649AFF),
+  Color(0xFFFFCB44),
+  Color(0xFF44F4FF),
+  Color(0xFF8C5FEC),
+  Color(0xFFEE5151),
+  Color(0xFFFF7144),
+  Color(0xFF96C72E),
+  Color(0xFF23B770),
+  Color(0xFF114BE1),
+];
+
 class ChartColors {
   List<Color> bgColor = [Color(0xff18191d), Color(0xff18191d)];
 
   Color kLineColor = Color(0xff4C86CD);
   Color lineFillColor = Color(0x554C86CD);
   Color lineFillInsideColor = Color(0x00000000);
-  Color ma5Color = Color(0xffC9B885);
-  Color ma10Color = Color(0xff6CB0A6);
-  Color ma30Color = Color(0xff9979C6);
+  List<Color> indicatorColors = _defaultIndicatorColors;
   Color upColor = Color(0xff4DAA90);
   Color dnColor = Color(0xffC15466);
   Color volColor = Color(0xff4729AE);
@@ -24,8 +35,6 @@ class ChartColors {
 
   Color defaultTextColor = Color(0xff60738E);
 
-  Color nowPriceUpColor = Color(0xff4DAA90);
-  Color nowPriceDnColor = Color(0xffC15466);
   Color nowPriceTextColor = Color(0xffffffff);
 
   //深度颜色
@@ -53,17 +62,16 @@ class ChartColors {
   //当前显示内最大和最小值的颜色
   Color maxColor = Color(0xffffffff);
   Color minColor = Color(0xffffffff);
+
   // 实时价格虚线颜色
   Color nowPriceDashLineColor = Color(0xff696969);
 
-  Color getMAColor(int index) {
-    switch (index % 3) {
-      case 1:
-        return ma10Color;
-      case 2:
-        return ma30Color;
-      default:
-        return ma5Color;
+  Color getIndicatorColor(int index) {
+    final realIndex = index % 10;
+    if (realIndex > indicatorColors.length - 1) {
+      return _defaultIndicatorColors[realIndex];
+    } else {
+      return indicatorColors[realIndex];
     }
   }
 }

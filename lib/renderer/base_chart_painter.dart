@@ -29,7 +29,7 @@ abstract class BaseChartPainter extends CustomPainter {
   late Rect mMainRect;
   List<Rect> mSecondaryRects = [];
   late double mDisplayHeight, mWidth;
-  double mTopPadding = 30.0, mBottomPadding = 20.0, mChildPadding = 12.0;
+  double mTopPadding = 0, mBottomPadding = 20.0, mChildPadding = 12.0;
   int mGridRows = 4, mGridColumns = 4;
   int mStartIndex = 0, mStopIndex = 0;
   double mMainMaxValue = double.minPositive, mMainMinValue = double.maxFinite;
@@ -61,7 +61,8 @@ abstract class BaseChartPainter extends CustomPainter {
   }) {
     mItemCount = datas?.length ?? 0;
     mPointWidth = this.chartStyle.pointWidth;
-    mTopPadding = this.chartStyle.topPadding;
+    // 多个指标的时候，防止和垂直价格标签重叠
+    mTopPadding = this.chartStyle.topPadding + 5;
     mBottomPadding = this.chartStyle.bottomPadding;
     mChildPadding = this.chartStyle.childPadding;
     mGridRows = this.chartStyle.gridRows;
@@ -178,6 +179,9 @@ abstract class BaseChartPainter extends CustomPainter {
     if (mainState == MainState.MA) {
       maxPrice = max(item.high, _findMaxMA(item.maValueList ?? [0]));
       minPrice = min(item.low, _findMinMA(item.maValueList ?? [0]));
+    } else if (mainState == MainState.EMA) {
+      maxPrice = max(item.high, _findMaxMA(item.emaValueList ?? [0]));
+      minPrice = min(item.low, _findMinMA(item.emaValueList ?? [0]));
     } else if (mainState == MainState.BOLL) {
       maxPrice = item.up == null ? item.high : max(item.up!, item.high);
       minPrice = item.dn == null ? item.low : min(item.dn!, item.low);
