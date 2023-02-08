@@ -97,7 +97,7 @@ class DataUtil {
           double value = c - m;
           md += value * value;
         }
-        md = md / (n - 1);
+        md = md / n;
         md = sqrt(md);
         entity.mb = entity.BOLLMA!;
         entity.up = entity.mb! + k * md;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:k_chart/indicator_setting.dart';
 
 import '../entity/candle_entity.dart';
 import '../k_chart_widget.dart' show MainState;
@@ -21,6 +22,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   late Rect _contentRect;
   List<int> maDayList;
   List<int> emaDayList;
+  final BollSetting bollSetting;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
   final double mLineStrokeWidth = 1.0;
@@ -42,6 +44,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     this.verticalTextAlignment, [
     this.maDayList = const [5, 10, 30],
     this.emaDayList = const [5, 10, 30],
+    this.bollSetting = const BollSetting(),
   ]) : super(
             chartRect: mainRect,
             maxValue: maxValue,
@@ -83,18 +86,21 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     } else if (state == MainState.BOLL) {
       span = TextSpan(
         children: [
+          TextSpan(
+              text: "BOLL(${bollSetting.n},${bollSetting.k})  ",
+              style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.up != 0)
             TextSpan(
-                text: "BOLL:${format(data.mb)}    ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
+                text: "UP:${format(data.up)}  ",
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.mb != 0)
             TextSpan(
-                text: "UB:${format(data.up)}    ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
+                text: "MB:${format(data.mb)}  ",
+                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
           if (data.dn != 0)
             TextSpan(
-                text: "LB:${format(data.dn)}    ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
+                text: "DN:${format(data.dn)}  ",
+                style: getTextStyle(this.chartColors.getIndicatorColor(3))),
         ],
       );
     }

@@ -115,6 +115,7 @@ class ChartPainter extends BaseChartPainter {
       verticalTextAlignment,
       indicatorSetting.maDayList,
       indicatorSetting.emaDayList,
+      indicatorSetting.bollSetting,
     );
     mSecondaryRenderers.clear();
     for (int i = 0; i < mSecondaryRects.length; i++) {
