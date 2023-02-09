@@ -49,6 +49,9 @@ class ChartPainter extends BaseChartPainter {
   final bool showNowPrice;
   final VerticalTextAlignment verticalTextAlignment;
 
+  /// 手动设置的时区和手机本地时区相差的秒数
+  final int timezoneOffset;
+
   ChartPainter(
     this.chartStyle,
     this.chartColors, {
@@ -73,6 +76,7 @@ class ChartPainter extends BaseChartPainter {
     this.fixedLength = 2,
     this.indicatorSetting = const IndicatorSetting(),
     required List<String> dateTimeFormat,
+    this.timezoneOffset = 0,
   }) : super(chartStyle,
             datas: datas,
             scaleX: scaleX,
@@ -548,7 +552,8 @@ class ChartPainter extends BaseChartPainter {
   String getDate(int? date) => dateFormat(
       DateTime.fromMillisecondsSinceEpoch(
           date ?? DateTime.now().millisecondsSinceEpoch),
-      mFormats);
+      mFormats,
+      timezoneOffset);
 
   double getMainY(double y) => mMainRenderer.getY(y);
 
