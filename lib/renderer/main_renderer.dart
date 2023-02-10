@@ -88,19 +88,19 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
         children: [
           TextSpan(
               text: "BOLL(${bollSetting.n},${bollSetting.k})  ",
-              style: getTextStyle(this.chartColors.getIndicatorColor(0))),
+              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
           if (data.up != 0)
             TextSpan(
                 text: "UP:${format(data.up)}  ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.mb != 0)
             TextSpan(
                 text: "MB:${format(data.mb)}  ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.dn != 0)
             TextSpan(
                 text: "DN:${format(data.dn)}  ",
-                style: getTextStyle(this.chartColors.getIndicatorColor(3))),
+                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
         ],
       );
     }
