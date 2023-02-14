@@ -11,9 +11,11 @@ class DataUtil {
   }) {
     calcMA(dataList, setting.maDayList);
     calcEMA(dataList, setting.emaDayList);
-    calcBOLL(dataList, setting.bollSetting.n, setting.bollSetting.k);
+    final bollSetting = setting.bollSetting;
+    calcBOLL(dataList, bollSetting.n, bollSetting.k);
     calcVolumeMA(dataList);
-    calcKDJ(dataList);
+    final kdjSetting = setting.kdjSetting;
+    calcKDJ(dataList, kdjSetting.period, kdjSetting.m1, kdjSetting.m2);
     calcMACD(dataList);
     calcRSI(dataList);
     calcWR(dataList);
@@ -208,7 +210,12 @@ class DataUtil {
     }
   }
 
-  static void calcKDJ(List<KLineEntity> dataList) {
+  static void calcKDJ(
+    List<KLineEntity> dataList,
+    int period,
+    int m1,
+    int m2,
+  ) {
     if (dataList.isEmpty) return;
     var preK = 50.0;
     var preD = 50.0;
@@ -218,7 +225,7 @@ class DataUtil {
     tmp.j = 50.0;
     for (int i = 1; i < dataList.length; i++) {
       final entity = dataList[i];
-      final n = max(0, i - 8);
+      final n = max(0, i - period);
       var low = entity.low;
       var high = entity.high;
       for (int j = n; j < i; j++) {
@@ -233,8 +240,8 @@ class DataUtil {
       final cur = entity.close;
       var rsv = (cur - low) * 100.0 / (high - low);
       rsv = rsv.isNaN ? 0 : rsv;
-      final k = (2 * preK + rsv) / 3.0;
-      final d = (2 * preD + k) / 3.0;
+      final k = ((m1 - 1) * preK + rsv) / m1;
+      final d = ((m2 - 1) * preD + k) / m2;
       final j = 3 * k - 2 * d;
       preK = k;
       preD = d;

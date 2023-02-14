@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../entity/k_line_entity.dart';
 import '../extension/num_ext.dart';
+import '../indicator_setting.dart';
 import '../k_chart_widget.dart' show SecondaryState;
 import '../utils/number_util.dart';
 import 'base_chart_renderer.dart';
@@ -12,17 +13,19 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   SecondaryState state;
   final ChartStyle chartStyle;
   final ChartColors chartColors;
+  final KdjSetting kdjSetting;
 
   SecondaryRenderer(
-      Rect mainRect,
-      double maxValue,
-      double minValue,
-      double topPadding,
-      this.state,
-      int fixedLength,
-      this.chartStyle,
-      this.chartColors)
-      : super(
+    Rect mainRect,
+    double maxValue,
+    double minValue,
+    double topPadding,
+    this.state,
+    int fixedLength,
+    this.chartStyle,
+    this.chartColors,
+    this.kdjSetting,
+  ) : super(
           chartRect: mainRect,
           maxValue: maxValue,
           minValue: minValue,
@@ -161,7 +164,8 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
       case SecondaryState.KDJ:
         children = [
           TextSpan(
-              text: "KDJ(9,1,3)    ",
+              text:
+                  "KDJ(${kdjSetting.period},${kdjSetting.m1},${kdjSetting.m2})    ",
               style: getTextStyle(this.chartColors.defaultTextColor)),
           if (data.macd != 0)
             TextSpan(

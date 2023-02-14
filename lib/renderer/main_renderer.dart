@@ -87,19 +87,19 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       span = TextSpan(
         children: [
           TextSpan(
-              text: "BOLL(${bollSetting.n},${bollSetting.k})  ",
+              text: "BOLL(${bollSetting.n},${bollSetting.k})   ",
               style: getTextStyle(this.chartColors.getIndicatorColor(3))),
           if (data.up != 0)
             TextSpan(
-                text: "UP:${format(data.up)}  ",
+                text: "UP:${format(data.up)}   ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.mb != 0)
             TextSpan(
-                text: "MB:${format(data.mb)}  ",
+                text: "MB:${format(data.mb)}   ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.dn != 0)
             TextSpan(
-                text: "DN:${format(data.dn)}  ",
+                text: "DN:${format(data.dn)}   ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(2))),
         ],
       );
@@ -121,7 +121,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     for (int i = 0; i < (data.maValueList?.length ?? 0); i++) {
       if (data.maValueList?[i] != 0) {
         var item = TextSpan(
-            text: "MA${maDayList[i]}:${format(data.maValueList![i])}    ",
+            text: "MA${maDayList[i]}:${format(data.maValueList![i])}   ",
             style: getTextStyle(this.chartColors.getIndicatorColor(i)));
         result.add(item);
       }
@@ -134,7 +134,7 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     for (int i = 0; i < (data.emaValueList?.length ?? 0); i++) {
       if (data.emaValueList?[i] != 0) {
         var item = TextSpan(
-            text: "EMA${emaDayList[i]}:${format(data.emaValueList![i])}    ",
+            text: "EMA${emaDayList[i]}:${format(data.emaValueList![i])}   ",
             style: getTextStyle(this.chartColors.getIndicatorColor(i)));
         result.add(item);
       }

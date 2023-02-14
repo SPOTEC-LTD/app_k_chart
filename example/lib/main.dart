@@ -65,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
     maDayList: [5, 10, 30, 60, 120],
     emaDayList: [5, 10, 30, 60],
     bollSetting: BollSetting(n: 30, k: 2),
+    kdjSetting: KdjSetting(period: 10, m1: 4, m2: 5),
   );
 
   @override

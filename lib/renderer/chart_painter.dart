@@ -136,6 +136,7 @@ class ChartPainter extends BaseChartPainter {
         fixedLength,
         chartStyle,
         chartColors,
+        indicatorSetting.kdjSetting,
       );
       mSecondaryRenderers.add(mSecondaryRenderer);
     }
