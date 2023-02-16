@@ -14,6 +14,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   final ChartStyle chartStyle;
   final ChartColors chartColors;
   final KdjSetting kdjSetting;
+  final List<int> rsiDayList;
 
   SecondaryRenderer(
     Rect mainRect,
@@ -25,6 +26,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     this.chartStyle,
     this.chartColors,
     this.kdjSetting,
+    this.rsiDayList,
   ) : super(
           chartRect: mainRect,
           maxValue: maxValue,
@@ -52,23 +54,25 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         break;
       case SecondaryState.KDJ:
         drawLine(lastPoint.k, curPoint.k, canvas, lastX, curX,
-            this.chartColors.kColor);
+            this.chartColors.getIndicatorColor(0));
         drawLine(lastPoint.d, curPoint.d, canvas, lastX, curX,
-            this.chartColors.dColor);
+            this.chartColors.getIndicatorColor(1));
         drawLine(lastPoint.j, curPoint.j, canvas, lastX, curX,
-            this.chartColors.jColor);
+            this.chartColors.getIndicatorColor(2));
         break;
       case SecondaryState.RSI:
-        drawLine(lastPoint.rsi, curPoint.rsi, canvas, lastX, curX,
-            this.chartColors.rsiColor);
+        for (int i = 0; i < rsiDayList.length; i++) {
+          drawLine(lastPoint.rsiValueList?[i], curPoint.rsiValueList?[i],
+              canvas, lastX, curX, this.chartColors.getIndicatorColor(i));
+        }
         break;
       case SecondaryState.WR:
         drawLine(lastPoint.r, curPoint.r, canvas, lastX, curX,
-            this.chartColors.rsiColor);
+            this.chartColors.getIndicatorColor(0));
         break;
       case SecondaryState.CCI:
         drawLine(lastPoint.cci, curPoint.cci, canvas, lastX, curX,
-            this.chartColors.rsiColor);
+            this.chartColors.getIndicatorColor(0));
         break;
       default:
         break;
@@ -166,40 +170,49 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
           TextSpan(
               text:
                   "KDJ(${kdjSetting.period},${kdjSetting.m1},${kdjSetting.m2})    ",
-              style: getTextStyle(this.chartColors.defaultTextColor)),
+              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
           if (data.macd != 0)
             TextSpan(
                 text: "K:${format(data.k)}    ",
-                style: getTextStyle(this.chartColors.kColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.dif != 0)
             TextSpan(
                 text: "D:${format(data.d)}    ",
-                style: getTextStyle(this.chartColors.dColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.dea != 0)
             TextSpan(
                 text: "J:${format(data.j)}    ",
-                style: getTextStyle(this.chartColors.jColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
         ];
         break;
       case SecondaryState.RSI:
         children = [
           TextSpan(
-              text: "RSI(14):${format(data.rsi)}    ",
-              style: getTextStyle(this.chartColors.rsiColor)),
+              text: "RSI(${rsiDayList.join(',')})}   ",
+              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
         ];
+        for (int i = 0; i < rsiDayList.length; i++) {
+          if (data.rsiValueList?[i] != 0) {
+            var item = TextSpan(
+                text:
+                    "RSI(${rsiDayList[i]}):${format(data.rsiValueList?[i])}   ",
+                style: getTextStyle(this.chartColors.getIndicatorColor(i)));
+            children.add(item);
+          }
+        }
         break;
       case SecondaryState.WR:
         children = [
           TextSpan(
               text: "WR(14):${format(data.r)}    ",
-              style: getTextStyle(this.chartColors.rsiColor)),
+              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
         ];
         break;
       case SecondaryState.CCI:
         children = [
           TextSpan(
               text: "CCI(14):${format(data.cci)}    ",
-              style: getTextStyle(this.chartColors.rsiColor)),
+              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
         ];
         break;
       default:

@@ -7,21 +7,21 @@ class IndicatorSetting {
     this.emaDayList = const [5, 10, 30],
     this.bollSetting = const BollSetting(),
     this.kdjSetting = const KdjSetting(),
+    this.rsiDayList = const [6, 12, 24],
   });
 
   final List<int> maDayList;
-
   final List<int> emaDayList;
-
   final BollSetting bollSetting;
-
   final KdjSetting kdjSetting;
+  final List<int> rsiDayList;
 
   IndicatorSetting.fromMap(Map<String, dynamic> map)
-      : maDayList = List<int>.from(map['maDayList']),
-        emaDayList = List<int>.from(map['emaDayList']),
+      : maDayList = List<int>.from(map['maDayList'] ?? const [5, 10, 30]),
+        emaDayList = List<int>.from(map['emaDayList'] ?? const [5, 10, 30]),
         bollSetting = BollSetting.fromMap(map['bollSetting']),
-        kdjSetting = KdjSetting.fromMap(map['kdjSetting']);
+        kdjSetting = KdjSetting.fromMap(map['kdjSetting']),
+        rsiDayList = List<int>.from(map['rsiDayList'] ?? const [6, 12, 24]);
 
   Map<String, Object?> toMap() {
     return {
@@ -29,6 +29,7 @@ class IndicatorSetting {
       'emaDayList': emaDayList,
       'bollSetting': bollSetting.toMap(),
       'kdjSetting': kdjSetting.toMap(),
+      'rsiDayList': rsiDayList,
     };
   }
 
@@ -37,12 +38,14 @@ class IndicatorSetting {
     List<int>? emaDayList,
     BollSetting? bollSetting,
     KdjSetting? kdjSetting,
+    List<int>? rsiDayList,
   }) {
     return IndicatorSetting(
       maDayList: maDayList ?? this.maDayList,
       emaDayList: emaDayList ?? this.emaDayList,
       bollSetting: bollSetting ?? this.bollSetting,
       kdjSetting: kdjSetting ?? this.kdjSetting,
+      rsiDayList: rsiDayList ?? this.rsiDayList,
     );
   }
 }
@@ -54,8 +57,8 @@ class BollSetting {
   final int k;
 
   BollSetting.fromMap(Map<String, dynamic> map)
-      : n = map['n'],
-        k = map['k'];
+      : n = map['n'] ?? 20,
+        k = map['k'] ?? 2;
 
   Map<String, Object?> toMap() {
     return {'n': n, 'k': k};
@@ -79,9 +82,9 @@ class KdjSetting {
   final int m2;
 
   KdjSetting.fromMap(Map<String, dynamic> map)
-      : period = map['period'],
-        m1 = map['m1'],
-        m2 = map['m2'];
+      : period = map['period'] ?? 9,
+        m1 = map['m1'] ?? 3,
+        m2 = map['m2'] ?? 3;
 
   Map<String, Object?> toMap() {
     return {'period': period, 'm1': m1, 'm2': m2};

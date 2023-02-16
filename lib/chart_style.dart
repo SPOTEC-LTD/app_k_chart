@@ -4,8 +4,8 @@ const _defaultIndicatorColors = [
   Color(0xFFF856A7),
   Color(0xFF649AFF),
   Color(0xFFFFCB44),
-  Color(0xFF44F4FF),
   Color(0xFF8C5FEC),
+  Color(0xFF44F4FF),
   Color(0xFFEE5151),
   Color(0xFFFF7144),
   Color(0xFF96C72E),
@@ -27,11 +27,6 @@ class ChartColors {
   Color macdColor = Color(0xff4729AE);
   Color difColor = Color(0xffC9B885);
   Color deaColor = Color(0xff6CB0A6);
-
-  Color kColor = Color(0xffC9B885);
-  Color dColor = Color(0xff6CB0A6);
-  Color jColor = Color(0xff9979C6);
-  Color rsiColor = Color(0xffC9B885);
 
   Color defaultTextColor = Color(0xff60738E);
 

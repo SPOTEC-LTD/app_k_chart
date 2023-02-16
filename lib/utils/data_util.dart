@@ -17,7 +17,7 @@ class DataUtil {
     final kdjSetting = setting.kdjSetting;
     calcKDJ(dataList, kdjSetting.period, kdjSetting.m1, kdjSetting.m2);
     calcMACD(dataList);
-    calcRSI(dataList);
+    calcRSI(dataList, setting.rsiDayList);
     calcWR(dataList);
     calcCCI(dataList);
   }
@@ -185,28 +185,32 @@ class DataUtil {
     }
   }
 
-  static void calcRSI(List<KLineEntity> dataList) {
-    double? rsi;
-    double rsiABSEma = 0;
-    double rsiMaxEma = 0;
+  static void calcRSI(
+    List<KLineEntity> dataList,
+    List<int> dayList,
+  ) {
+    if (dataList.isEmpty) return;
+    var lastClosePrice = dataList[0].close;
+    Map<String, dynamic> result = {};
     for (int i = 0; i < dataList.length; i++) {
       KLineEntity entity = dataList[i];
+      entity.rsiValueList = [];
       final double closePrice = entity.close;
-      if (i == 0) {
-        rsi = 0;
-        rsiABSEma = 0;
-        rsiMaxEma = 0;
-      } else {
-        double rMax = max(0, closePrice - dataList[i - 1].close.toDouble());
-        double rAbs = (closePrice - dataList[i - 1].close.toDouble()).abs();
+      final rMax = max(0, closePrice - lastClosePrice);
+      final rAbs = (closePrice - lastClosePrice).abs();
 
-        rsiMaxEma = (rMax + (14 - 1) * rsiMaxEma) / 14;
-        rsiABSEma = (rAbs + (14 - 1) * rsiABSEma) / 14;
-        rsi = (rsiMaxEma / rsiABSEma) * 100;
+      for (final day in dayList) {
+        final lastSm = 'lastSm$day';
+        final lastSa = 'lastSa$day';
+        result[lastSm] = (rMax + (day - 1) * (result[lastSm] ?? 0)) / day;
+        result[lastSa] = (rAbs + (day - 1) * (result[lastSa] ?? 0)) / day;
+        if (i < day - 1) {
+          entity.rsiValueList?.add(null);
+        } else {
+          entity.rsiValueList?.add(result[lastSm] / result[lastSa] * 100);
+        }
       }
-      if (i < 13) rsi = null;
-      if (rsi != null && rsi.isNaN) rsi = null;
-      entity.rsi = rsi;
+      lastClosePrice = closePrice;
     }
   }
 
