@@ -1,4 +1,3 @@
 mixin WREntity {
-  /// %R值
-  double? r;
+  List<double?>? wrValueList;
 }

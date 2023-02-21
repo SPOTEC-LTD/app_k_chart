@@ -15,6 +15,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   final ChartColors chartColors;
   final KdjSetting kdjSetting;
   final List<int> rsiDayList;
+  final List<int> wrDayList;
 
   SecondaryRenderer(
     Rect mainRect,
@@ -27,6 +28,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     this.chartColors,
     this.kdjSetting,
     this.rsiDayList,
+    this.wrDayList,
   ) : super(
           chartRect: mainRect,
           maxValue: maxValue,
@@ -67,8 +69,10 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         }
         break;
       case SecondaryState.WR:
-        drawLine(lastPoint.r, curPoint.r, canvas, lastX, curX,
-            this.chartColors.getIndicatorColor(0));
+        for (int i = 0; i < wrDayList.length; i++) {
+          drawLine(lastPoint.wrValueList?[i], curPoint.wrValueList?[i], canvas,
+              lastX, curX, this.chartColors.getIndicatorColor(i));
+        }
         break;
       case SecondaryState.CCI:
         drawLine(lastPoint.cci, curPoint.cci, canvas, lastX, curX,
@@ -170,7 +174,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
           TextSpan(
               text:
                   "KDJ(${kdjSetting.period},${kdjSetting.m1},${kdjSetting.m2})    ",
-              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
           if (data.macd != 0)
             TextSpan(
                 text: "K:${format(data.k)}    ",
@@ -188,14 +192,13 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
       case SecondaryState.RSI:
         children = [
           TextSpan(
-              text: "RSI(${rsiDayList.join(',')})}   ",
-              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
+              text: "RSI(${rsiDayList.join(',')})   ",
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
         ];
         for (int i = 0; i < rsiDayList.length; i++) {
-          if (data.rsiValueList?[i] != 0) {
+          if (data.rsiValueList?[i] != null) {
             var item = TextSpan(
-                text:
-                    "RSI(${rsiDayList[i]}):${format(data.rsiValueList?[i])}   ",
+                text: "${rsiDayList[i]}:${format(data.rsiValueList?[i])}   ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(i)));
             children.add(item);
           }
@@ -204,15 +207,23 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
       case SecondaryState.WR:
         children = [
           TextSpan(
-              text: "WR(14):${format(data.r)}    ",
-              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
+              text: "WR(${wrDayList.join(',')})   ",
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
         ];
+        for (int i = 0; i < wrDayList.length; i++) {
+          if (data.wrValueList?[i] != null) {
+            var item = TextSpan(
+                text: "${wrDayList[i]}:${format(data.wrValueList?[i])}   ",
+                style: getTextStyle(this.chartColors.getIndicatorColor(i)));
+            children.add(item);
+          }
+        }
         break;
       case SecondaryState.CCI:
         children = [
           TextSpan(
               text: "CCI(14):${format(data.cci)}    ",
-              style: getTextStyle(this.chartColors.getIndicatorColor(3))),
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
         ];
         break;
       default:

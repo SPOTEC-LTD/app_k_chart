@@ -18,7 +18,7 @@ class DataUtil {
     calcKDJ(dataList, kdjSetting.period, kdjSetting.m1, kdjSetting.m2);
     calcMACD(dataList);
     calcRSI(dataList, setting.rsiDayList);
-    calcWR(dataList);
+    calcWR(dataList, setting.wrDayList);
     calcCCI(dataList);
   }
 
@@ -185,11 +185,8 @@ class DataUtil {
     }
   }
 
-  static void calcRSI(
-    List<KLineEntity> dataList,
-    List<int> dayList,
-  ) {
-    if (dataList.isEmpty) return;
+  static void calcRSI(List<KLineEntity> dataList, List<int> dayList) {
+    if (dayList.isEmpty) return;
     var lastClosePrice = dataList[0].close;
     Map<String, dynamic> result = {};
     for (int i = 0; i < dataList.length; i++) {
@@ -255,28 +252,38 @@ class DataUtil {
     }
   }
 
-  static void calcWR(List<KLineEntity> dataList) {
-    double r;
+  static void calcWR(List<KLineEntity> dataList, List<int> dayList) {
+    if (dayList.isEmpty) return;
+    Map<String, List<KLineEntity>> windowData = {};
     for (int i = 0; i < dataList.length; i++) {
       KLineEntity entity = dataList[i];
-      int startIndex = i - 14;
-      if (startIndex < 0) {
-        startIndex = 0;
-      }
-      double max14 = double.minPositive;
-      double min14 = double.maxFinite;
-      for (int index = startIndex; index <= i; index++) {
-        max14 = max(max14, dataList[index].high);
-        min14 = min(min14, dataList[index].low);
-      }
-      if (i < 13) {
-        entity.r = -10;
-      } else {
-        r = -100 * (max14 - dataList[i].close) / (max14 - min14);
-        if (r.isNaN) {
-          entity.r = null;
+      entity.wrValueList = [];
+      for (final day in dayList) {
+        final wrKey = 'wr$day';
+        if (windowData[wrKey] == null) {
+          windowData[wrKey] = [];
+        }
+        final windowDataList = windowData[wrKey]!;
+        // 先加入
+        windowDataList.add(entity);
+
+        double maxP = double.minPositive;
+        double minP = double.maxFinite;
+        for (final data in windowDataList) {
+          maxP = max(maxP, data.high);
+          minP = min(minP, data.low);
+        }
+        if (i < day - 1) {
+          entity.wrValueList?.add(null);
         } else {
-          entity.r = r;
+          final wr = maxP > minP
+              ? -100.0 * (maxP - dataList[i].close) / (maxP - minP)
+              : -100.0;
+          entity.wrValueList?.add(wr);
+        }
+        // 如果超过长度再移除
+        if (windowDataList.length == day) {
+          windowDataList.removeAt(0);
         }
       }
     }

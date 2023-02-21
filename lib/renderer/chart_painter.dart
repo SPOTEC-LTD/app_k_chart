@@ -138,6 +138,7 @@ class ChartPainter extends BaseChartPainter {
         chartColors,
         indicatorSetting.kdjSetting,
         indicatorSetting.rsiDayList,
+        indicatorSetting.wrDayList,
       );
       mSecondaryRenderers.add(mSecondaryRenderer);
     }

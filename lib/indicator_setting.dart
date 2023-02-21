@@ -8,6 +8,7 @@ class IndicatorSetting {
     this.bollSetting = const BollSetting(),
     this.kdjSetting = const KdjSetting(),
     this.rsiDayList = const [6, 12, 24],
+    this.wrDayList = const [14],
   });
 
   final List<int> maDayList;
@@ -15,13 +16,15 @@ class IndicatorSetting {
   final BollSetting bollSetting;
   final KdjSetting kdjSetting;
   final List<int> rsiDayList;
+  final List<int> wrDayList;
 
   IndicatorSetting.fromMap(Map<String, dynamic> map)
       : maDayList = List<int>.from(map['maDayList'] ?? const [5, 10, 30]),
         emaDayList = List<int>.from(map['emaDayList'] ?? const [5, 10, 30]),
         bollSetting = BollSetting.fromMap(map['bollSetting']),
         kdjSetting = KdjSetting.fromMap(map['kdjSetting']),
-        rsiDayList = List<int>.from(map['rsiDayList'] ?? const [6, 12, 24]);
+        rsiDayList = List<int>.from(map['rsiDayList'] ?? const [6, 12, 24]),
+        wrDayList = List<int>.from(map['wrDayList'] ?? const [14]);
 
   Map<String, Object?> toMap() {
     return {
@@ -30,6 +33,7 @@ class IndicatorSetting {
       'bollSetting': bollSetting.toMap(),
       'kdjSetting': kdjSetting.toMap(),
       'rsiDayList': rsiDayList,
+      'wrDayList': wrDayList,
     };
   }
 
@@ -39,6 +43,7 @@ class IndicatorSetting {
     BollSetting? bollSetting,
     KdjSetting? kdjSetting,
     List<int>? rsiDayList,
+    List<int>? wrDayList,
   }) {
     return IndicatorSetting(
       maDayList: maDayList ?? this.maDayList,
@@ -46,6 +51,7 @@ class IndicatorSetting {
       bollSetting: bollSetting ?? this.bollSetting,
       kdjSetting: kdjSetting ?? this.kdjSetting,
       rsiDayList: rsiDayList ?? this.rsiDayList,
+      wrDayList: wrDayList ?? this.wrDayList,
     );
   }
 }
