@@ -23,12 +23,8 @@ class ChartColors {
   List<Color> indicatorColors = _defaultIndicatorColors;
   Color upColor = Color(0xff4DAA90);
   Color dnColor = Color(0xffC15466);
-  Color volColor = Color(0xff4729AE);
 
   Color indicatorDesColor = Color(0xFF23B770);
-  Color macdColor = Color(0xff4729AE);
-  Color difColor = Color(0xffC9B885);
-  Color deaColor = Color(0xff6CB0A6);
 
   Color defaultTextColor = Color(0xff60738E);
 

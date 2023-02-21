@@ -16,7 +16,8 @@ class DataUtil {
     calcVolumeMA(dataList);
     final kdjSetting = setting.kdjSetting;
     calcKDJ(dataList, kdjSetting.period, kdjSetting.m1, kdjSetting.m2);
-    calcMACD(dataList);
+    final macdSetting = setting.macdSetting;
+    calcMACD(dataList, macdSetting.short, macdSetting.long, macdSetting.m);
     calcRSI(dataList, setting.rsiDayList);
     calcWR(dataList, setting.wrDayList);
     calcCCI(dataList);
@@ -124,9 +125,9 @@ class DataUtil {
     }
   }
 
-  static void calcMACD(List<KLineEntity> dataList) {
-    double ema12 = 0;
-    double ema26 = 0;
+  static void calcMACD(List<KLineEntity> dataList, int short, int long, int m) {
+    double emaShort = 0;
+    double emaLong = 0;
     double dif = 0;
     double dea = 0;
     double macd = 0;
@@ -135,19 +136,21 @@ class DataUtil {
       KLineEntity entity = dataList[i];
       final closePrice = entity.close;
       if (i == 0) {
-        ema12 = closePrice;
-        ema26 = closePrice;
+        emaShort = closePrice;
+        emaLong = closePrice;
       } else {
         // EMA（12） = 前一日EMA（12） X 11/13 + 今日收盘价 X 2/13
-        ema12 = ema12 * 11 / 13 + closePrice * 2 / 13;
+        emaShort =
+            emaShort * (short - 1) / (short + 1) + closePrice * 2 / (short + 1);
         // EMA（26） = 前一日EMA（26） X 25/27 + 今日收盘价 X 2/27
-        ema26 = ema26 * 25 / 27 + closePrice * 2 / 27;
+        emaLong =
+            emaLong * (long - 1) / (long + 1) + closePrice * 2 / (long + 1);
       }
       // DIF = EMA（12） - EMA（26） 。
       // 今日DEA = （前一日DEA X 8/10 + 今日DIF X 2/10）
       // 用（DIF-DEA）*2即为MACD柱状图。
-      dif = ema12 - ema26;
-      dea = dea * 8 / 10 + dif * 2 / 10;
+      dif = emaShort - emaLong;
+      dea = dea * (m - 1) / (m + 1) + dif * 2 / (m + 1);
       macd = (dif - dea) * 2;
       entity.dif = dif;
       entity.dea = dea;

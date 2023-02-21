@@ -16,6 +16,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   final KdjSetting kdjSetting;
   final List<int> rsiDayList;
   final List<int> wrDayList;
+  final MacdSetting macdSetting;
 
   SecondaryRenderer(
     Rect mainRect,
@@ -29,6 +30,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     this.kdjSetting,
     this.rsiDayList,
     this.wrDayList,
+    this.macdSetting,
   ) : super(
           chartRect: mainRect,
           maxValue: maxValue,
@@ -123,11 +125,11 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     }
     if (lastPoint.dif != 0) {
       drawLine(lastPoint.dif, curPoint.dif, canvas, lastX, curX,
-          this.chartColors.difColor);
+          this.chartColors.getIndicatorColor(1));
     }
     if (lastPoint.dea != 0) {
       drawLine(lastPoint.dea, curPoint.dea, canvas, lastX, curX,
-          this.chartColors.deaColor);
+          this.chartColors.getIndicatorColor(2));
     }
   }
 
@@ -139,7 +141,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         children = [
           TextSpan(
               text: "VOL:${NumberUtil.format(data.vol)}    ",
-              style: getTextStyle(this.chartColors.volColor)),
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
           if (data.MA5Volume.notNullOrZero)
             TextSpan(
                 text: "MA5:${NumberUtil.format(data.MA5Volume!)}    ",
@@ -153,20 +155,21 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
       case SecondaryState.MACD:
         children = [
           TextSpan(
-              text: "MACD(12,26,9)    ",
-              style: getTextStyle(this.chartColors.defaultTextColor)),
+              text:
+                  "MACD(${macdSetting.short},${macdSetting.long},${macdSetting.m})    ",
+              style: getTextStyle(this.chartColors.indicatorDesColor)),
           if (data.macd != 0)
             TextSpan(
                 text: "MACD:${format(data.macd)}    ",
-                style: getTextStyle(this.chartColors.macdColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
           if (data.dif != 0)
             TextSpan(
                 text: "DIF:${format(data.dif)}    ",
-                style: getTextStyle(this.chartColors.difColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(1))),
           if (data.dea != 0)
             TextSpan(
                 text: "DEA:${format(data.dea)}    ",
-                style: getTextStyle(this.chartColors.deaColor)),
+                style: getTextStyle(this.chartColors.getIndicatorColor(2))),
         ];
         break;
       case SecondaryState.KDJ:

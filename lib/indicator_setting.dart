@@ -9,6 +9,7 @@ class IndicatorSetting {
     this.kdjSetting = const KdjSetting(),
     this.rsiDayList = const [6, 12, 24],
     this.wrDayList = const [14],
+    this.macdSetting = const MacdSetting(),
   });
 
   final List<int> maDayList;
@@ -17,6 +18,7 @@ class IndicatorSetting {
   final KdjSetting kdjSetting;
   final List<int> rsiDayList;
   final List<int> wrDayList;
+  final MacdSetting macdSetting;
 
   IndicatorSetting.fromMap(Map<String, dynamic> map)
       : maDayList = List<int>.from(map['maDayList'] ?? const [5, 10, 30]),
@@ -24,7 +26,8 @@ class IndicatorSetting {
         bollSetting = BollSetting.fromMap(map['bollSetting']),
         kdjSetting = KdjSetting.fromMap(map['kdjSetting']),
         rsiDayList = List<int>.from(map['rsiDayList'] ?? const [6, 12, 24]),
-        wrDayList = List<int>.from(map['wrDayList'] ?? const [14]);
+        wrDayList = List<int>.from(map['wrDayList'] ?? const [14]),
+        macdSetting = MacdSetting.fromMap(map['macdSetting']);
 
   Map<String, Object?> toMap() {
     return {
@@ -34,6 +37,7 @@ class IndicatorSetting {
       'kdjSetting': kdjSetting.toMap(),
       'rsiDayList': rsiDayList,
       'wrDayList': wrDayList,
+      'macdSetting': macdSetting.toMap(),
     };
   }
 
@@ -44,6 +48,7 @@ class IndicatorSetting {
     KdjSetting? kdjSetting,
     List<int>? rsiDayList,
     List<int>? wrDayList,
+    MacdSetting? macdSetting,
   }) {
     return IndicatorSetting(
       maDayList: maDayList ?? this.maDayList,
@@ -52,6 +57,7 @@ class IndicatorSetting {
       kdjSetting: kdjSetting ?? this.kdjSetting,
       rsiDayList: rsiDayList ?? this.rsiDayList,
       wrDayList: wrDayList ?? this.wrDayList,
+      macdSetting: macdSetting ?? this.macdSetting,
     );
   }
 }
@@ -101,6 +107,36 @@ class KdjSetting {
       period: period ?? this.period,
       m1: m1 ?? this.m1,
       m2: m2 ?? this.m2,
+    );
+  }
+}
+
+class MacdSetting {
+  const MacdSetting({this.short = 12, this.long = 26, this.m = 9});
+
+  /// 短期移动平均线天数
+  final int short;
+
+  /// 长期移动平均线天数
+  final int long;
+
+  /// diff值的m日平滑移动平均数
+  final int m;
+
+  MacdSetting.fromMap(Map<String, dynamic> map)
+      : short = map['short'] ?? 12,
+        long = map['long'] ?? 26,
+        m = map['m'] ?? 9;
+
+  Map<String, Object?> toMap() {
+    return {'short': short, 'long': long, 'm': m};
+  }
+
+  MacdSetting copyWith({int? short, int? long, int? m}) {
+    return MacdSetting(
+      short: short ?? this.short,
+      long: long ?? this.long,
+      m: m ?? this.m,
     );
   }
 }
