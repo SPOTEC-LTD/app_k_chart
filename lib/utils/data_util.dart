@@ -223,27 +223,18 @@ class DataUtil {
     if (dataList.isEmpty) return;
     var preK = 50.0;
     var preD = 50.0;
-    final tmp = dataList.first;
-    tmp.k = preK;
-    tmp.d = preD;
-    tmp.j = 50.0;
-    for (int i = 1; i < dataList.length; i++) {
+    final List<KLineEntity> windowDataList = [];
+    for (int i = 0; i < dataList.length; i++) {
       final entity = dataList[i];
-      final n = max(0, i - period);
+      windowDataList.add(entity);
       var low = entity.low;
       var high = entity.high;
-      for (int j = n; j < i; j++) {
-        final t = dataList[j];
-        if (t.low < low) {
-          low = t.low;
-        }
-        if (t.high > high) {
-          high = t.high;
-        }
+      for (final data in windowDataList) {
+        low = min(low, data.low);
+        high = max(high, data.high);
       }
       final cur = entity.close;
-      var rsv = (cur - low) * 100.0 / (high - low);
-      rsv = rsv.isNaN ? 0 : rsv;
+      var rsv = high == low ? 0.0 : (cur - low) * 100.0 / (high - low);
       final k = ((m1 - 1) * preK + rsv) / m1;
       final d = ((m2 - 1) * preD + k) / m2;
       final j = 3 * k - 2 * d;
@@ -252,6 +243,10 @@ class DataUtil {
       entity.k = k;
       entity.d = d;
       entity.j = j;
+      // 如果超过长度再移除
+      if (windowDataList.length == period) {
+        windowDataList.removeAt(0);
+      }
     }
   }
 

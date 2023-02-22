@@ -178,15 +178,15 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
               text:
                   "KDJ(${kdjSetting.period},${kdjSetting.m1},${kdjSetting.m2})    ",
               style: getTextStyle(this.chartColors.indicatorDesColor)),
-          if (data.macd != 0)
+          if (data.k != null)
             TextSpan(
                 text: "K:${format(data.k)}    ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(0))),
-          if (data.dif != 0)
+          if (data.d != null)
             TextSpan(
                 text: "D:${format(data.d)}    ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(1))),
-          if (data.dea != 0)
+          if (data.j != null)
             TextSpan(
                 text: "J:${format(data.j)}    ",
                 style: getTextStyle(this.chartColors.getIndicatorColor(2))),
