@@ -10,6 +10,7 @@ class IndicatorSetting {
     this.rsiDayList = const [6, 12, 24],
     this.wrDayList = const [14],
     this.macdSetting = const MacdSetting(),
+    this.cciDay = 14,
   });
 
   final List<int> maDayList;
@@ -19,6 +20,7 @@ class IndicatorSetting {
   final List<int> rsiDayList;
   final List<int> wrDayList;
   final MacdSetting macdSetting;
+  final int cciDay;
 
   IndicatorSetting.fromMap(Map<String, dynamic> map)
       : maDayList = List<int>.from(map['maDayList'] ?? const [5, 10, 30]),
@@ -27,7 +29,8 @@ class IndicatorSetting {
         kdjSetting = KdjSetting.fromMap(map['kdjSetting']),
         rsiDayList = List<int>.from(map['rsiDayList'] ?? const [6, 12, 24]),
         wrDayList = List<int>.from(map['wrDayList'] ?? const [14]),
-        macdSetting = MacdSetting.fromMap(map['macdSetting']);
+        macdSetting = MacdSetting.fromMap(map['macdSetting']),
+        cciDay = map['cciDay'] ?? 14;
 
   Map<String, Object?> toMap() {
     return {
@@ -38,6 +41,7 @@ class IndicatorSetting {
       'rsiDayList': rsiDayList,
       'wrDayList': wrDayList,
       'macdSetting': macdSetting.toMap(),
+      'cciDay': cciDay,
     };
   }
 
@@ -49,6 +53,7 @@ class IndicatorSetting {
     List<int>? rsiDayList,
     List<int>? wrDayList,
     MacdSetting? macdSetting,
+    int? cciDay,
   }) {
     return IndicatorSetting(
       maDayList: maDayList ?? this.maDayList,
@@ -58,6 +63,7 @@ class IndicatorSetting {
       rsiDayList: rsiDayList ?? this.rsiDayList,
       wrDayList: wrDayList ?? this.wrDayList,
       macdSetting: macdSetting ?? this.macdSetting,
+      cciDay: cciDay ?? this.cciDay,
     );
   }
 }

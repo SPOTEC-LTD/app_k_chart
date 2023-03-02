@@ -140,6 +140,7 @@ class ChartPainter extends BaseChartPainter {
         indicatorSetting.rsiDayList,
         indicatorSetting.wrDayList,
         indicatorSetting.macdSetting,
+        indicatorSetting.cciDay,
       );
       mSecondaryRenderers.add(mSecondaryRenderer);
     }

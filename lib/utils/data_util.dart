@@ -20,7 +20,7 @@ class DataUtil {
     calcMACD(dataList, macdSetting.short, macdSetting.long, macdSetting.m);
     calcRSI(dataList, setting.rsiDayList);
     calcWR(dataList, setting.wrDayList);
-    calcCCI(dataList);
+    calcCCI(dataList, setting.cciDay);
   }
 
   static calcMA(List<KLineEntity> dataList, List<int> maDayList) {
@@ -287,9 +287,9 @@ class DataUtil {
     }
   }
 
-  static void calcCCI(List<KLineEntity> dataList) {
+  static void calcCCI(List<KLineEntity> dataList, int day) {
     final size = dataList.length;
-    final count = 14;
+    final count = day;
     for (int i = 0; i < size; i++) {
       final kline = dataList[i];
       final tp = (kline.high + kline.low + kline.close) / 3;
@@ -304,13 +304,16 @@ class DataUtil {
       amount = 0.0;
       for (int n = start; n <= i; n++) {
         amount +=
-            (ma - (dataList[n].high + dataList[n].low + dataList[n].close) / 3)
+            ((dataList[n].high + dataList[n].low + dataList[n].close) / 3 - ma)
                 .abs();
       }
       final md = amount / len;
-      kline.cci = ((tp - ma) / 0.015 / md);
+      kline.cci = ((tp - ma) / md / 0.015);
       if (kline.cci!.isNaN) {
         kline.cci = 0.0;
+      }
+      if (i < day - 1) {
+        kline.cci = null;
       }
     }
   }

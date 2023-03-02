@@ -17,6 +17,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   final List<int> rsiDayList;
   final List<int> wrDayList;
   final MacdSetting macdSetting;
+  final int cciDay;
 
   SecondaryRenderer(
     Rect mainRect,
@@ -31,6 +32,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     this.rsiDayList,
     this.wrDayList,
     this.macdSetting,
+    this.cciDay,
   ) : super(
           chartRect: mainRect,
           maxValue: maxValue,
@@ -225,8 +227,12 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
       case SecondaryState.CCI:
         children = [
           TextSpan(
-              text: "CCI(14):${format(data.cci)}    ",
+              text: "CCI($cciDay)   ",
               style: getTextStyle(this.chartColors.indicatorDesColor)),
+          if (data.cci != null)
+            TextSpan(
+                text: "$cciDay:${format(data.cci)}",
+                style: getTextStyle(this.chartColors.getIndicatorColor(0))),
         ];
         break;
       default:
