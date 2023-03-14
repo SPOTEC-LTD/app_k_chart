@@ -162,6 +162,7 @@ class _KChartWidgetState extends State<KChartWidget>
     super.initState();
     mInfoWindowStream = StreamController<InfoWindowEntity?>();
     _chartController.hideInfoDialogFunction = _hideInfoDialog;
+    _chartController.resetMScrollXFunction = _resetMScrollX;
     _chartController.addListener(_onChartController);
   }
 
@@ -370,6 +371,11 @@ class _KChartWidgetState extends State<KChartWidget>
     isLongPress = false;
     isOnTap = false;
     mInfoWindowStream?.sink.add(null);
+    notifyChanged();
+  }
+
+  void _resetMScrollX() {
+    mScrollX = 0;
     notifyChanged();
   }
 

@@ -33,9 +33,16 @@ class KChartController extends ChangeNotifier {
 
   VoidCallback? hideInfoDialogFunction;
 
+  VoidCallback? resetMScrollXFunction;
+
   /// 隐藏信息弹窗
   void hideInfoDialog() {
     hideInfoDialogFunction?.call();
+  }
+
+  /// 滚动到最后
+  void resetMScrollX() {
+    resetMScrollXFunction?.call();
   }
 
   /// 将所有绘制的图形设置为未激活状态，如果图形还未绘制完，则删除该图形
