@@ -538,10 +538,7 @@ class _KChartWidgetState extends State<KChartWidget>
     if ((widget.datas?.length ?? 0) < 2) {
       return [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn];
     }
-
-    int firstTime = widget.datas!.first.time ?? 0;
-    int secondTime = widget.datas![1].time ?? 0;
-    int time = secondTime - firstTime;
+    int time = widget.timeInterval;
     time ~/= 1000;
     //月线
     if (time >= 24 * 60 * 60 * 28)
