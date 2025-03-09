@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:k_chart/indicator_setting.dart';
 
 import '../entity/candle_entity.dart';
 import '../k_chart_widget.dart' show MainState;
 import 'base_chart_renderer.dart';
+import 'dart:ui' as ui;
 
 enum VerticalTextAlignment { left, right }
 
@@ -30,14 +32,16 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   late Paint mLinePaint;
   final VerticalTextAlignment verticalTextAlignment;
 
+  double get topPadding => chartStyle.topPadding;
+
   MainRenderer(
     Rect mainRect,
     double maxValue,
     double minValue,
-    double topPadding,
     this.state,
     this.isLine,
     int fixedLength,
+    TextStyle inheritedTextStyle,
     this.chartStyle,
     this.chartColors,
     this.scaleX,
@@ -46,12 +50,13 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     this.emaDayList = const [5, 10, 30],
     this.bollSetting = const BollSetting(),
   ]) : super(
-            chartRect: mainRect,
-            maxValue: maxValue,
-            minValue: minValue,
-            topPadding: topPadding,
-            fixedLength: fixedLength,
-            gridColor: chartColors.gridColor) {
+          chartRect: mainRect,
+          maxValue: maxValue,
+          minValue: minValue,
+          fixedLength: fixedLength,
+          gridColor: chartColors.gridColor,
+          inheritedTextStyle: inheritedTextStyle,
+        ) {
     mCandleWidth = this.chartStyle.candleWidth;
     mCandleLineWidth = this.chartStyle.candleLineWidth;
     mLinePaint = Paint()
@@ -108,12 +113,8 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
     TextPainter tp =
         TextPainter(text: span, textDirection: TextDirection.ltr, maxLines: 2);
     tp.layout(maxWidth: chartRect.width);
-    // 一行的时候，往下移动一点，看是来没那么高。一行大概高12
-    if (tp.height < 20) {
-      tp.paint(canvas, Offset(x, chartRect.top - topPadding + 5));
-    } else {
-      tp.paint(canvas, Offset(x, chartRect.top - topPadding));
-    }
+    final offsetY = (topPadding - tp.height) / 2;
+    tp.paint(canvas, Offset(x, chartRect.top - topPadding + offsetY));
   }
 
   List<InlineSpan> _createMATextSpan(CandleEntity data) {
@@ -293,10 +294,10 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       double offsetX;
       switch (verticalTextAlignment) {
         case VerticalTextAlignment.left:
-          offsetX = 0;
+          offsetX = 6;
           break;
         case VerticalTextAlignment.right:
-          offsetX = chartRect.width - tp.width;
+          offsetX = chartRect.width - tp.width - 6;
           break;
       }
 
@@ -322,6 +323,17 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
       canvas.drawLine(Offset(columnSpace * i, topPadding),
           Offset(columnSpace * i, chartRect.bottom), gridPaint);
     }
+  }
+
+  void drawLogo(Canvas canvas, Size size, ui.Image logoImage) {
+    final paint = Paint();
+    paint.isAntiAlias = true;
+    // 在图表上绘制 logo（假设 logo 是图片）
+    canvas.drawImage(
+      logoImage,
+      Offset(12, chartRect.bottom - 12 - logoImage.height),
+      paint,
+    );
   }
 
   @override

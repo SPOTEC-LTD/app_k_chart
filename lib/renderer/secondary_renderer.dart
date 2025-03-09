@@ -19,13 +19,15 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
   final MacdSetting macdSetting;
   final int cciDay;
 
+  double get childPadding => chartStyle.childPadding;
+
   SecondaryRenderer(
     Rect mainRect,
     double maxValue,
     double minValue,
-    double topPadding,
     this.state,
     int fixedLength,
+    TextStyle inheritedTextStyle,
     this.chartStyle,
     this.chartColors,
     this.kdjSetting,
@@ -37,9 +39,9 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
           chartRect: mainRect,
           maxValue: maxValue,
           minValue: minValue,
-          topPadding: topPadding,
           fixedLength: fixedLength,
           gridColor: chartColors.gridColor,
+          inheritedTextStyle: inheritedTextStyle,
         ) {
     mMACDWidth = this.chartStyle.macdWidth;
     mVolWidth = this.chartStyle.volWidth;
@@ -242,7 +244,8 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         text: TextSpan(children: children ?? []),
         textDirection: TextDirection.ltr);
     tp.layout();
-    tp.paint(canvas, Offset(x, chartRect.top - tp.height));
+    final offsetY = (childPadding - tp.height) / 2;
+    tp.paint(canvas, Offset(x, chartRect.top - childPadding + offsetY));
   }
 
   @override
@@ -265,10 +268,17 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
         textDirection: TextDirection.ltr);
     minTp.layout();
 
-    maxTp.paint(canvas,
-        Offset(chartRect.width - maxTp.width, chartRect.top - maxTp.height));
-    minTp.paint(canvas,
-        Offset(chartRect.width - minTp.width, chartRect.bottom - minTp.height));
+    maxTp.paint(
+      canvas,
+      Offset(chartRect.width - maxTp.width - 6, chartRect.top - maxTp.height),
+    );
+    minTp.paint(
+      canvas,
+      Offset(
+        chartRect.width - minTp.width - 6,
+        chartRect.bottom - minTp.height,
+      ),
+    );
   }
 
   @override
@@ -280,7 +290,7 @@ class SecondaryRenderer extends BaseChartRenderer<KLineEntity> {
     double columnSpace = chartRect.width / gridColumns;
     for (int i = 1; i < gridColumns; i++) {
       //mSecondaryRect垂直线
-      canvas.drawLine(Offset(columnSpace * i, chartRect.top - topPadding),
+      canvas.drawLine(Offset(columnSpace * i, chartRect.top - childPadding),
           Offset(columnSpace * i, chartRect.bottom), gridPaint);
     }
   }

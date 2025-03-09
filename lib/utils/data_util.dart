@@ -9,6 +9,7 @@ class DataUtil {
     List<KLineEntity> dataList, {
     IndicatorSetting setting = const IndicatorSetting(),
   }) {
+    if (dataList.isEmpty) return;
     calcMA(dataList, setting.maDayList);
     calcEMA(dataList, setting.emaDayList);
     final bollSetting = setting.bollSetting;

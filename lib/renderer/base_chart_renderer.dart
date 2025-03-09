@@ -5,7 +5,6 @@ export '../chart_style.dart';
 abstract class BaseChartRenderer<T> {
   double maxValue, minValue;
   late double scaleY;
-  double topPadding;
   Rect chartRect;
   int fixedLength;
   Paint chartPaint = Paint()
@@ -16,16 +15,17 @@ abstract class BaseChartRenderer<T> {
   Paint gridPaint = Paint()
     ..isAntiAlias = true
     ..filterQuality = FilterQuality.high
-    ..strokeWidth = 0.5
+    ..strokeWidth = 1
     ..color = Color(0xff4c5c74);
+  final TextStyle inheritedTextStyle;
 
   BaseChartRenderer({
     required this.chartRect,
     required this.maxValue,
     required this.minValue,
-    required this.topPadding,
     required this.fixedLength,
     required Color gridColor,
+    required this.inheritedTextStyle,
   }) {
     if (maxValue == minValue) {
       maxValue *= 1.5;
@@ -69,6 +69,13 @@ abstract class BaseChartRenderer<T> {
   }
 
   TextStyle getTextStyle(Color color) {
-    return TextStyle(fontSize: 10.0, color: color);
+    return inheritedTextStyle.merge(
+      TextStyle(
+        fontSize: 9.0,
+        color: color,
+        fontWeight: FontWeight.w500,
+        height: 1,
+      ),
+    );
   }
 }

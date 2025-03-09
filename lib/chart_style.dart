@@ -48,8 +48,7 @@ class ChartColors {
   Color infoWindowUpColor = Color(0xff00ff00);
   Color infoWindowDnColor = Color(0xffff0000);
 
-  Color hCrossColor = Color(0xffffffff);
-  Color vCrossColor = Color(0x1Effffff);
+  Color crossLineColor = Color(0xffffffff);
   Color crossTextColor = Color(0xffffffff);
 
   //当前显示内最大和最小值的颜色
@@ -70,52 +69,55 @@ class ChartColors {
 }
 
 class ChartStyle {
-  double topPadding = 30.0;
+  double topPadding = 20;
 
-  double bottomPadding = 20.0;
+  double bottomPadding = 16;
 
   double mainVerticalPadding = 15;
 
-  double childPadding = 12.0;
+  double childPadding = 20;
 
-  double rightPadding = 60.0;
+  double rightPadding = 60;
 
   //点与点的距离
-  double pointWidth = 11.0;
+  double pointWidth = 6;
 
   //蜡烛宽度
-  double candleWidth = 8.5;
+  double candleWidth = 3;
 
   //蜡烛中间线的宽度
-  double candleLineWidth = 1.5;
+  double candleLineWidth = 1;
 
   //vol柱子宽度
-  double volWidth = 8.5;
+  double volWidth = 3;
 
   //macd柱子宽度
-  double macdWidth = 3.0;
-
-  //垂直交叉线宽度
-  double vCrossWidth = 8.5;
-
-  //水平交叉线宽度
-  double hCrossWidth = 1;
+  double macdWidth = 3;
 
   //水平、垂直交叉圆点大小
-  double crossPointRadius = 8.5;
+  double crossPointRadius = 6;
+
+  //水平、垂直交叉的线条长度
+  double crossLineLength = 2;
+
+  //水平、垂直交叉的线条间隔
+  double crossLineSpan = 2;
+
+  //水平、垂直交叉的线条粗细
+  double crossLineWidth = 1;
 
   //现在价格的线条长度
-  double nowPriceLineLength = 1;
+  double nowPriceLineLength = 2;
 
   //现在价格的线条间隔
-  double nowPriceLineSpan = 1;
+  double nowPriceLineSpan = 2;
 
   //现在价格的线条粗细
   double nowPriceLineWidth = 1;
 
   int gridRows = 4;
 
-  int gridColumns = 4;
+  int gridColumns = 5;
 
   //下方時間客製化
   List<String>? dateTimeFormat;
@@ -124,10 +126,10 @@ class ChartStyle {
   double? selectWidth = 100;
 
   //选中后弹窗的padding
-  double? selectPadding = 5;
+  double? selectPadding = 6;
 
   //选中后显示值边框圆角
-  double selectBorderRadius = 0;
+  double selectBorderRadius = 6;
 
   //选中后显示值边框宽度
   double selectBorderWidth = 1;

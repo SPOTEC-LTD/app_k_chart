@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:ui' as ui;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/chart_translations.dart';
@@ -73,8 +73,7 @@ class KChartWidget extends StatefulWidget {
   /// 画图点击事件超出主图范围
   final VoidCallback? outMainTap;
 
-  /// 手动设置的时区和手机本地时区相差的秒数
-  final int timezoneOffset;
+  final ui.Image? logoImage;
 
   KChartWidget(
     this.datas,
@@ -110,7 +109,7 @@ class KChartWidget extends StatefulWidget {
     this.drawGraphProgress,
     this.anyGraphDetected,
     this.moveFinished,
-    this.timezoneOffset = 0,
+    this.logoImage,
   });
 
   @override
@@ -214,7 +213,8 @@ class _KChartWidgetState extends State<KChartWidget>
       indicatorSetting: widget.indicatorSetting,
       verticalTextAlignment: widget.verticalTextAlignment,
       dateTimeFormat: gerRealDateTimeFormat(),
-      timezoneOffset: widget.timezoneOffset,
+      inheritedTextStyle: DefaultTextStyle.of(context).style,
+      logoImage: widget.logoImage,
     );
 
     return LayoutBuilder(
@@ -459,7 +459,7 @@ class _KChartWidgetState extends State<KChartWidget>
             "${upDown > 0 ? "+" : ""}${upDown.toStringAsFixed(widget.fixedLength)}",
             "${upDownPercent > 0 ? "+" : ''}${upDownPercent.toStringAsFixed(2)}%",
             NumberUtil.format(entity.vol),
-            if (entityAmount != null) entityAmount.toInt().toString()
+            if (entityAmount != null) entityAmount.toInt().toString(),
           ];
           final dialogPadding = widget.chartStyle.selectPadding ?? 5.0;
           final dialogWidth = widget.chartStyle.selectWidth ?? mWidth / 3;
@@ -500,23 +500,34 @@ class _KChartWidgetState extends State<KChartWidget>
 
   Widget _buildItem(String info, String infoName) {
     Color color = widget.chartColors.infoWindowNormalColor;
-    if (info.startsWith("+"))
+    if (info.startsWith('+'))
       color = widget.chartColors.infoWindowUpColor;
-    else if (info.startsWith("-")) color = widget.chartColors.infoWindowDnColor;
+    else if (info.startsWith('-')) color = widget.chartColors.infoWindowDnColor;
     final infoWidget = Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Expanded(
-            child: Text("$infoName",
-                style: TextStyle(
-                    color: widget.chartColors.infoWindowTitleColor,
-                    fontSize: 10.0))),
-        Text(info, style: TextStyle(color: color, fontSize: 10.0)),
+          child: Text(
+            '$infoName',
+            style: TextStyle(
+              color: widget.chartColors.infoWindowTitleColor,
+              fontSize: 9,
+            ),
+          ),
+        ),
+        Text(
+          info,
+          style: TextStyle(
+            color: color,
+            fontSize: 10.0,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2.5),
+      padding: EdgeInsets.symmetric(vertical: 1.5),
       child: widget.materialInfoDialog
           ? Material(color: Colors.transparent, child: infoWidget)
           : infoWidget,
@@ -526,8 +537,7 @@ class _KChartWidgetState extends State<KChartWidget>
   String getDate(int? date) => dateFormat(
       DateTime.fromMillisecondsSinceEpoch(
           date ?? DateTime.now().millisecondsSinceEpoch),
-      gerRealDateTimeFormat(),
-      widget.timezoneOffset);
+      gerRealDateTimeFormat());
 
   /// 根据返回数据的时间间隔计算正确的时间格式
   List<String> gerRealDateTimeFormat() {

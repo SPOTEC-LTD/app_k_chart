@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart'
-    show Color, TextStyle, Rect, Canvas, Size, CustomPainter;
+    show Canvas, Color, CustomPainter, FontWeight, Rect, Size, TextStyle;
 import 'package:k_chart/utils/date_format_util.dart';
 
 import '../chart_style.dart' show ChartStyle;
@@ -44,6 +44,7 @@ abstract class BaseChartPainter extends CustomPainter {
   final ChartStyle chartStyle;
   late double mPointWidth;
   List<String> mFormats = [yyyy, '-', mm, '-', dd, ' ', HH, ':', nn]; //格式化时间
+  final TextStyle inheritedTextStyle;
 
   BaseChartPainter(
     this.chartStyle, {
@@ -53,6 +54,7 @@ abstract class BaseChartPainter extends CustomPainter {
     required this.isLongPress,
     required this.selectX,
     required this.dateTimeFormat,
+    required this.inheritedTextStyle,
     this.isOnTap = false,
     this.mainState = MainState.MA,
     this.isTapShowInfoDialog = false,
@@ -62,7 +64,7 @@ abstract class BaseChartPainter extends CustomPainter {
     mItemCount = datas?.length ?? 0;
     mPointWidth = this.chartStyle.pointWidth;
     // 多个指标的时候，防止和垂直价格标签重叠
-    mTopPadding = this.chartStyle.topPadding + 5;
+    mTopPadding = this.chartStyle.topPadding;
     mBottomPadding = this.chartStyle.bottomPadding;
     mChildPadding = this.chartStyle.childPadding;
     mGridRows = this.chartStyle.gridRows;
@@ -87,6 +89,7 @@ abstract class BaseChartPainter extends CustomPainter {
     canvas.scale(1, 1);
     drawBg(canvas, size);
     drawGrid(canvas);
+    drawLogo(canvas, size);
     if (datas != null && datas!.isNotEmpty) {
       drawChart(canvas, size);
       drawVerticalText(canvas);
@@ -100,6 +103,7 @@ abstract class BaseChartPainter extends CustomPainter {
         drawCrossLineText(canvas, size);
       }
     }
+
     canvas.restore();
   }
 
@@ -134,6 +138,9 @@ abstract class BaseChartPainter extends CustomPainter {
 
   //交叉线值
   void drawCrossLineText(Canvas canvas, Size size);
+
+  //logo
+  void drawLogo(Canvas canvas, Size size);
 
   void initRect(Size size) {
     double secondaryHeight = mDisplayHeight * 0.2;
@@ -346,7 +353,9 @@ abstract class BaseChartPainter extends CustomPainter {
       (translateX + mTranslateX) * scaleX;
 
   TextStyle getTextStyle(Color color) {
-    return TextStyle(fontSize: 10.0, color: color);
+    return inheritedTextStyle.merge(
+      TextStyle(fontSize: 9.0, color: color, fontWeight: FontWeight.w500),
+    );
   }
 
   @override
