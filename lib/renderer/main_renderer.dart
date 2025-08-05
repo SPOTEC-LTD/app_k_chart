@@ -328,12 +328,21 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   void drawLogo(Canvas canvas, Size size, ui.Image logoImage) {
     final paint = Paint();
     paint.isAntiAlias = true;
-    // 在图表上绘制 logo（假设 logo 是图片）
-    canvas.drawImage(
-      logoImage,
-      Offset(12, chartRect.bottom - 12 - logoImage.height),
-      paint,
+    double devicePixelRatio =
+        ui.PlatformDispatcher.instance.views.first.devicePixelRatio;
+    final destRect = Rect.fromLTWH(
+      12,
+      chartRect.bottom - 12 - logoImage.height / devicePixelRatio,
+      logoImage.width / devicePixelRatio,
+      logoImage.height / devicePixelRatio,
     );
+    final srcRect = Rect.fromLTWH(
+      0,
+      0,
+      logoImage.width.toDouble(),
+      logoImage.height.toDouble(),
+    );
+    canvas.drawImageRect(logoImage, srcRect, destRect, paint);
   }
 
   @override
