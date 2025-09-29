@@ -220,7 +220,8 @@ const String z = 'z';
 const String Z = 'Z';
 
 /// [timezoneOffset] 手动设置的时区和手机本地时区相差的秒数
-String dateFormat(DateTime date, List<String> formats) {
+String dateFormat(DateTime dateTime, List<String> formats, int timezoneOffset) {
+  final date = dateTime.add(Duration(seconds: timezoneOffset));
   final sb = StringBuffer();
 
   for (String format in formats) {

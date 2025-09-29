@@ -73,6 +73,9 @@ class KChartWidget extends StatefulWidget {
   /// 画图点击事件超出主图范围
   final VoidCallback? outMainTap;
 
+  /// 手动设置的时区和手机本地时区相差的秒数
+  final int timezoneOffset;
+
   final ui.Image? logoImage;
 
   KChartWidget(
@@ -109,6 +112,7 @@ class KChartWidget extends StatefulWidget {
     this.drawGraphProgress,
     this.anyGraphDetected,
     this.moveFinished,
+    this.timezoneOffset = 0,
     this.logoImage,
   });
 
@@ -213,6 +217,7 @@ class _KChartWidgetState extends State<KChartWidget>
       indicatorSetting: widget.indicatorSetting,
       verticalTextAlignment: widget.verticalTextAlignment,
       dateTimeFormat: gerRealDateTimeFormat(),
+      timezoneOffset: widget.timezoneOffset,
       inheritedTextStyle: DefaultTextStyle.of(context).style,
       logoImage: widget.logoImage,
     );
@@ -535,9 +540,11 @@ class _KChartWidgetState extends State<KChartWidget>
   }
 
   String getDate(int? date) => dateFormat(
-      DateTime.fromMillisecondsSinceEpoch(
-          date ?? DateTime.now().millisecondsSinceEpoch),
-      gerRealDateTimeFormat());
+        DateTime.fromMillisecondsSinceEpoch(
+            date ?? DateTime.now().millisecondsSinceEpoch),
+        gerRealDateTimeFormat(),
+        widget.timezoneOffset,
+      );
 
   /// 根据返回数据的时间间隔计算正确的时间格式
   List<String> gerRealDateTimeFormat() {

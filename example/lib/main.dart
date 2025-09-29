@@ -168,6 +168,7 @@ class _MyHomePageState extends State<MyHomePage> {
               anyGraphDetected: (detected) {
                 print('detected $detected');
               },
+              timezoneOffset: -60 * 60 * 48 * 2,
             ),
           ),
           if (showLoading)
