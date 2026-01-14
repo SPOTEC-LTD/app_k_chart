@@ -78,6 +78,8 @@ class KChartWidget extends StatefulWidget {
 
   final ui.Image? logoImage;
 
+  final ValueChanged<int>? onLongPressedIndexChange;
+
   KChartWidget(
     this.datas,
     this.chartStyle,
@@ -114,6 +116,7 @@ class KChartWidget extends StatefulWidget {
     this.moveFinished,
     this.timezoneOffset = 0,
     this.logoImage,
+    this.onLongPressedIndexChange,
   });
 
   @override
@@ -154,6 +157,8 @@ class _KChartWidgetState extends State<KChartWidget>
 
   /// 是否可以绘制手画的图形
   bool get _enableDraw => widget.enableDraw;
+
+  int? _longPressedIndex;
 
   final _defaultChartController = KChartController();
 
@@ -311,6 +316,8 @@ class _KChartWidgetState extends State<KChartWidget>
             if ((mSelectX != details.localPosition.dx ||
                     mSelectY != details.localPosition.dy) &&
                 !widget.isTrendLine) {
+              _longPressedIndex = _stockPainter.calculateSelectedX(mSelectX);
+              widget.onLongPressedIndexChange?.call(_longPressedIndex!);
               mSelectX = details.localPosition.dx;
               mSelectY = details.localPosition.dy;
               notifyChanged();
@@ -334,6 +341,11 @@ class _KChartWidgetState extends State<KChartWidget>
                 !widget.isTrendLine) {
               mSelectX = details.localPosition.dx;
               mSelectY = details.localPosition.dy;
+              final newIndex = _stockPainter.calculateSelectedX(mSelectX);
+              if (newIndex != _longPressedIndex) {
+                _longPressedIndex = newIndex;
+                widget.onLongPressedIndexChange?.call(newIndex);
+              }
               notifyChanged();
             }
             if (widget.isTrendLine) {
@@ -347,10 +359,14 @@ class _KChartWidgetState extends State<KChartWidget>
             }
           },
           onLongPressEnd: (details) {
+            _longPressedIndex = null;
             isLongPress = false;
             enableCordRecord = true;
             mInfoWindowStream?.sink.add(null);
             notifyChanged();
+          },
+          onLongPressCancel: () {
+            _longPressedIndex = null;
           },
           child: Stack(
             children: <Widget>[
