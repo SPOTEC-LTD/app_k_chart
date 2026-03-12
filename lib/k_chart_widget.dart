@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -247,6 +248,7 @@ class _KChartWidgetState extends State<KChartWidget>
                   widget.isTapShowInfoDialog) {
                 mSelectX = details.localPosition.dx;
                 mSelectY = details.localPosition.dy;
+                _longPressedIndex = _stockPainter.calculateSelectedX(mSelectX);
                 notifyChanged();
               }
             }
@@ -316,10 +318,10 @@ class _KChartWidgetState extends State<KChartWidget>
             if ((mSelectX != details.localPosition.dx ||
                     mSelectY != details.localPosition.dy) &&
                 !widget.isTrendLine) {
-              _longPressedIndex = _stockPainter.calculateSelectedX(mSelectX);
-              widget.onLongPressedIndexChange?.call(_longPressedIndex!);
               mSelectX = details.localPosition.dx;
               mSelectY = details.localPosition.dy;
+              _longPressedIndex = _stockPainter.calculateSelectedX(mSelectX);
+              widget.onLongPressedIndexChange?.call(_longPressedIndex!);
               notifyChanged();
             }
             //For TrendLine
@@ -468,8 +470,8 @@ class _KChartWidgetState extends State<KChartWidget>
               !snapshot.hasData ||
               snapshot.data?.kLineEntity == null) return Container();
           KLineEntity entity = snapshot.data!.kLineEntity;
-          double upDown = entity.change ?? entity.close - entity.open;
-          double upDownPercent = entity.ratio ?? (upDown / entity.open) * 100;
+          double upDown = _calculateUpDown(entity);
+          double upDownPercent = _calculateUpDownPercent(entity);
           final double? entityAmount = entity.amount;
           infos = [
             getDate(entity.time),
@@ -517,6 +519,31 @@ class _KChartWidgetState extends State<KChartWidget>
             ),
           );
         });
+  }
+
+  double _calculateUpDown(KLineEntity current) {
+    if (current.change != null) {
+      return current.change!;
+    }
+    if (_longPressedIndex == null || _longPressedIndex! <= 0) {
+      return 0;
+    }
+    final preClose = widget.datas![_longPressedIndex! - 1].close;
+    return current.close - preClose;
+  }
+
+  double _calculateUpDownPercent(KLineEntity current) {
+    if (current.ratio != null) {
+      return current.ratio!;
+    }
+    if (_longPressedIndex == null || _longPressedIndex! <= 0) {
+      return 0;
+    }
+    final preClose = widget.datas![_longPressedIndex! - 1].close;
+    if (preClose == 0) {
+      return 0;
+    }
+    return (current.close - preClose) / preClose * 100;
   }
 
   Widget _buildItem(String info, String infoName) {

@@ -159,7 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
               translations: kChartTranslations,
               showNowPrice: _showNowPrice,
               hideGrid: _hideGrid,
-              isTapShowInfoDialog: false,
+              isTapShowInfoDialog: true,
               verticalTextAlignment: _verticalTextAlignment,
               indicatorSetting: _indicatorSetting,
               drawGraphProgress: (isFinished) =>
