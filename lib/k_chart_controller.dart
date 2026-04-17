@@ -1,6 +1,8 @@
 // Author: Dean.Liu
 // DateTime: 2022/03/17 13:50
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 
 import 'entity/draw_graph_entity.dart';
@@ -13,11 +15,15 @@ class KChartController extends ChangeNotifier {
   /// 已经绘制好的图形
   List<DrawnGraphEntity> get drawnGraphs => _drawnGraphs;
 
+  Stream<void> get hideInfoStream => _hideInfoController.stream;
+
   /// 已经绘制好的图形
   set drawnGraphs(List<DrawnGraphEntity> graphs) {
     _drawnGraphs = graphs;
     notifyListeners();
   }
+
+  final _hideInfoController = StreamController<void>.broadcast();
 
   List<DrawnGraphEntity> _drawnGraphs;
 
@@ -31,18 +37,15 @@ class KChartController extends ChangeNotifier {
     return null;
   }
 
-  VoidCallback? hideInfoDialogFunction;
-
-  VoidCallback? resetMScrollXFunction;
+  @override
+  void dispose() {
+    _hideInfoController.close();
+    super.dispose();
+  }
 
   /// 隐藏信息弹窗
   void hideInfoDialog() {
-    hideInfoDialogFunction?.call();
-  }
-
-  /// 滚动到最后
-  void resetMScrollX() {
-    resetMScrollXFunction?.call();
+    _hideInfoController.add(null);
   }
 
   /// 将所有绘制的图形设置为未激活状态，如果图形还未绘制完，则删除该图形

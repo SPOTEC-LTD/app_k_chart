@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 import 'dart:ui' as ui;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart/chart_translations.dart';
@@ -166,12 +166,14 @@ class _KChartWidgetState extends State<KChartWidget>
   KChartController get _chartController =>
       widget.chartController ?? _defaultChartController;
 
+  StreamSubscription? _hideInfoSub;
+
   @override
   void initState() {
     super.initState();
     mInfoWindowStream = StreamController<InfoWindowEntity?>();
-    _chartController.hideInfoDialogFunction = _hideInfoDialog;
-    _chartController.resetMScrollXFunction = _resetMScrollX;
+    _hideInfoSub =
+        _chartController.hideInfoStream.listen((_) => _hideInfoDialog());
     _chartController.addListener(_onChartController);
   }
 
@@ -184,6 +186,7 @@ class _KChartWidgetState extends State<KChartWidget>
   void dispose() {
     mInfoWindowStream?.close();
     _controller?.dispose();
+    _hideInfoSub?.cancel();
     _chartController.removeListener(_onChartController);
     _defaultChartController.dispose();
     super.dispose();
@@ -394,11 +397,6 @@ class _KChartWidgetState extends State<KChartWidget>
     isLongPress = false;
     isOnTap = false;
     mInfoWindowStream?.sink.add(null);
-    notifyChanged();
-  }
-
-  void _resetMScrollX() {
-    mScrollX = 0;
     notifyChanged();
   }
 
